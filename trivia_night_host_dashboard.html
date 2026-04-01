@@ -178,6 +178,9 @@
   .winner-row { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 16px 0; }
   .winner-name { font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent2); }
 
+  /* ── Dim mode ── */
+  html[data-theme="dim"] { --bg:#252525; --surface:#2f2f2f; --surface2:#383838; --border:rgba(255,255,255,0.12); --text:#e8e8e8; --muted:#888888; }
+
   /* ── Light mode ── */
   html[data-theme="light"] { --bg:#f0f0f0; --surface:#ffffff; --surface2:#e8e8e8; --border:rgba(0,0,0,0.12); --text:#111111; --muted:#555555; }
   html[data-theme="light"] .option { background: rgba(0,0,0,0.02); }
@@ -805,10 +808,12 @@ async function generateQuestions() {
 function applyTheme() {
   const t = localStorage.getItem('trivia_host_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
-  document.getElementById('theme-toggle').textContent = t === 'dark' ? '☀️' : '🌙';
+  document.getElementById('theme-toggle').textContent = t === 'dark' ? '🌙' : t === 'dim' ? '🌓' : '☀️';
+  document.getElementById('theme-toggle').title = t === 'dark' ? 'Dark mode' : t === 'dim' ? 'Dim mode' : 'Light mode';
 }
 function toggleTheme() {
-  const next = (localStorage.getItem('trivia_host_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+  const cycle = { dark: 'dim', dim: 'light', light: 'dark' };
+  const next = cycle[localStorage.getItem('trivia_host_theme') || 'dark'];
   localStorage.setItem('trivia_host_theme', next);
   applyTheme();
 }
