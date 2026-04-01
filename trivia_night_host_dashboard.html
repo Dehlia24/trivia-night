@@ -261,18 +261,37 @@
       <!-- QUESTIONS VIEW -->
       <div class="view" id="view-questions">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-          <button class="btn btn-primary" onclick="generateAIQuestions()" id="gen-btn">
-            <span id="gen-btn-text">✦ Generate with AI</span>
+          <button class="btn btn-primary" onclick="generateQuestions()" id="gen-btn">
+            <span id="gen-btn-text">↓ Fetch Questions</span>
           </button>
           <button class="btn btn-secondary" onclick="addBlankQuestion()">+ Add blank</button>
         </div>
-        <div style="margin-bottom:10px;">
-          <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">Anthropic API Key</label>
-          <input type="password" id="ai-api-key" placeholder="sk-ant-..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
-        </div>
-        <div style="margin-bottom:16px;">
-          <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">AI Generation Topic (optional)</label>
-          <input type="text" id="ai-topic" placeholder="e.g. Tech history, Science, Pop culture..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
+        <div style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;">
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">Category</label>
+            <select id="otdb-category" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
+              <option value="">Any category</option>
+              <option value="9">General Knowledge</option>
+              <option value="17">Science &amp; Nature</option>
+              <option value="18">Computers</option>
+              <option value="11">Film</option>
+              <option value="12">Music</option>
+              <option value="15">Video Games</option>
+              <option value="21">Sports</option>
+              <option value="22">Geography</option>
+              <option value="23">History</option>
+              <option value="26">Celebrities</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">Difficulty</label>
+            <select id="otdb-difficulty" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
+              <option value="">Any</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
         </div>
         <div id="questions-list"></div>
       </div>
@@ -625,36 +644,36 @@ function addBlankQuestion() {
   db.ref('questions').set(questions); renderQuestionsEditor();
 }
 
-async function generateAIQuestions() {
-  const apiKey = document.getElementById('ai-api-key').value.trim();
-  if (!apiKey) { showNotif('Enter your Anthropic API key first', 'error'); return; }
+async function generateQuestions() {
   const btn = document.getElementById('gen-btn');
   const btnText = document.getElementById('gen-btn-text');
   btn.disabled = true;
-  btnText.innerHTML = '<span class="spinner"></span> Generating...';
-  const topic = document.getElementById('ai-topic').value.trim();
-  const prompt = `Generate 5 fun multiple choice trivia questions${topic ? ' about: ' + topic : ' covering a mix of categories like Tech, Science, History, Pop Culture, Geography'}.
-Return ONLY valid JSON array, no markdown, no explanation:
-[{"question":"...","options":["A","B","C","D"],"correct":0,"category":"..."}]
-The "correct" field is the 0-based index of the correct option. Make questions challenging but fun for a corporate trivia night.`;
+  btnText.innerHTML = '<span class="spinner"></span> Fetching...';
+
+  const category = document.getElementById('otdb-category').value;
+  const difficulty = document.getElementById('otdb-difficulty').value;
+  let url = 'https://opentdb.com/api.php?amount=10&type=multiple';
+  if (category)   url += '&category='   + category;
+  if (difficulty) url += '&difficulty=' + difficulty;
+
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
-    });
+    const resp = await fetch(url);
     const data = await resp.json();
-    if (!resp.ok) { showNotif('API error: ' + (data.error?.message || resp.status), 'error'); btn.disabled = false; btnText.textContent = '✦ Generate with AI'; return; }
-    const text = data.content.map(i => i.text || '').join('');
-    const clean = text.replace(/```json|```/g, '').trim();
-    const newQs = JSON.parse(clean);
+    if (data.response_code !== 0) { showNotif('Not enough questions for that filter — try loosening the category or difficulty', 'error'); btn.disabled = false; btnText.textContent = '↓ Fetch Questions'; return; }
+
+    const decode = s => new DOMParser().parseFromString(s, 'text/html').body.textContent;
+    const newQs = data.results.map(r => {
+      const opts = [...r.incorrect_answers, r.correct_answer].map(decode).sort(() => Math.random() - 0.5);
+      return { question: decode(r.question), options: opts, correct: opts.indexOf(decode(r.correct_answer)), category: decode(r.category) };
+    });
+
     questions = [...questions, ...newQs];
     await db.ref('questions').set(questions);
     renderQuestionsEditor();
-    showNotif('Generated ' + newQs.length + ' questions!');
-  } catch(e) { showNotif('Generation failed: ' + e.message, 'error'); }
+    showNotif('Added ' + newQs.length + ' questions!');
+  } catch(e) { showNotif('Fetch failed: ' + e.message, 'error'); }
   btn.disabled = false;
-  btnText.textContent = '✦ Generate with AI';
+  btnText.textContent = '↓ Fetch Questions';
 }
 
 init();
