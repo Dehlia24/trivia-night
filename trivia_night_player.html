@@ -96,6 +96,7 @@
     <h2>Join the Game</h2>
     <div class="sub">Enter your name to play</div>
     <input type="text" id="name-input" placeholder="Your name..." maxlength="24" autocomplete="off">
+    <div id="name-error" style="color:#f26b6b;font-size:13px;margin-top:6px;min-height:18px;"></div>
     <button class="btn-join" onclick="joinGame()" id="join-btn">Join →</button>
   </div>
 
@@ -201,9 +202,22 @@ function uid() { return Math.random().toString(36).slice(2) + Date.now().toStrin
 async function joinGame() {
   const name = document.getElementById('name-input').value.trim();
   if (!name) { document.getElementById('name-input').focus(); return; }
+
+  document.getElementById('join-btn').disabled = true;
+
+  const snap = await db.ref('players').get();
+  const existing = snap.val() || {};
+  const taken = Object.values(existing).some(p => p.name?.toLowerCase() === name.toLowerCase());
+  if (taken) {
+    document.getElementById('join-btn').disabled = false;
+    document.getElementById('name-input').focus();
+    document.getElementById('name-error').textContent = 'That name is already taken — choose another.';
+    return;
+  }
+  document.getElementById('name-error').textContent = '';
+
   myName = name;
   myId   = uid();
-  document.getElementById('join-btn').disabled = true;
 
   await db.ref('players/' + myId).set({ name: myName, score: 0 });
 
