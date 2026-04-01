@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia Night — Host Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a12;
+    --surface: #13131f;
+    --surface2: #1c1c2e;
+    --border: rgba(255,255,255,0.08);
+    --accent: #7c6af7;
+    --accent2: #f7c26a;
+    --green: #3dd68c;
+    --red: #f26b6b;
+    --text: #f0eeff;
+    --muted: #8884aa;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; padding: 0; }
+
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .logo { font-family: var(--font-head); font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .status-pill {
+    font-size: 12px; font-weight: 500; padding: 4px 14px; border-radius: 99px;
+    background: rgba(124,106,247,0.15); color: var(--accent); border: 1px solid rgba(124,106,247,0.3);
+  }
+  .status-pill.live { background: rgba(61,214,140,0.12); color: var(--green); border-color: rgba(61,214,140,0.3); }
+
+  main { display: grid; grid-template-columns: 1fr 320px; flex: 1; gap: 0; }
+
+  .panel { padding: 24px 28px; }
+  .right-panel { border-left: 1px solid var(--border); background: var(--surface); overflow-y: auto; }
+
+  h2 { font-family: var(--font-head); font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+
+  .q-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 24px;
+    margin-bottom: 20px;
+  }
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .q-num { font-family: var(--font-head); font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+  .q-cat { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: rgba(247,194,106,0.12); color: var(--accent2); border: 1px solid rgba(247,194,106,0.25); }
+  .q-text { font-family: var(--font-head); font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 20px; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .option {
+    padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03); font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .option:hover { background: rgba(124,106,247,0.08); border-color: rgba(124,106,247,0.3); }
+  .option.correct { background: rgba(61,214,140,0.1); border-color: rgba(61,214,140,0.4); color: var(--green); }
+  .option.revealed-wrong { background: rgba(242,107,107,0.1); border-color: rgba(242,107,107,0.3); color: var(--red); opacity: 0.6; }
+  .opt-letter {
+    width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .correct .opt-letter { background: rgba(61,214,140,0.2); color: var(--green); }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .btn {
+    padding: 10px 22px; border-radius: 8px; border: none; font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #6b5be0; }
+  .btn-secondary { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+  .btn-danger { background: rgba(242,107,107,0.15); color: var(--red); border: 1px solid rgba(242,107,107,0.3); }
+  .btn-success { background: rgba(61,214,140,0.15); color: var(--green); border: 1px solid rgba(61,214,140,0.3); }
+  .btn-success:hover { background: rgba(61,214,140,0.25); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .timer-row { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .timer-display {
+    font-family: var(--font-head); font-size: 48px; font-weight: 800; min-width: 80px;
+    color: var(--accent2); transition: color 0.3s;
+  }
+  .timer-display.urgent { color: var(--red); }
+  .timer-bar-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+  .timer-bar { height: 100%; background: var(--accent2); border-radius: 99px; transition: width 1s linear, background 0.3s; }
+  .timer-bar.urgent { background: var(--red); }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-value { font-family: var(--font-head); font-size: 24px; font-weight: 800; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.purple { color: var(--accent); }
+
+  .lb-list { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--surface2); border-radius: 8px; border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .lb-row.top1 { border-color: rgba(247,194,106,0.4); background: rgba(247,194,106,0.06); }
+  .lb-rank { font-family: var(--font-head); font-size: 12px; font-weight: 800; color: var(--muted); min-width: 20px; }
+  .lb-row.top1 .lb-rank { color: var(--accent2); }
+  .lb-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .lb-score { font-family: var(--font-head); font-size: 16px; font-weight: 800; color: var(--accent); }
+
+  .resp-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+  .resp-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: rgba(255,255,255,0.03); }
+  .resp-row .name { flex: 1; color: var(--muted); }
+  .resp-row .ans { font-weight: 500; }
+  .resp-row.correct-ans .ans { color: var(--green); }
+  .resp-row.wrong-ans .ans { color: var(--red); }
+
+  .q-editor { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .q-editor label { font-size: 12px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 6px; }
+  .q-editor input, .q-editor select, .q-editor textarea {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px; margin-bottom: 12px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .q-editor input:focus, .q-editor textarea:focus { border-color: var(--accent); }
+  .opt-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .opt-in-wrap { position: relative; }
+  .opt-in-label { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: var(--muted); pointer-events: none; }
+  .opt-in { padding-left: 28px !important; }
+
+  .share-box { background: rgba(124,106,247,0.08); border: 1px solid rgba(124,106,247,0.25); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .share-url { font-size: 13px; color: var(--accent); font-weight: 500; word-break: break-all; margin-bottom: 8px; }
+  .copy-btn { font-size: 12px; padding: 5px 12px; border-radius: 6px; background: rgba(124,106,247,0.15); color: var(--accent); border: 1px solid rgba(124,106,247,0.3); cursor: pointer; }
+  .copy-btn:hover { background: rgba(124,106,247,0.25); }
+
+  .tabs { display: flex; gap: 0; margin-bottom: 20px; background: var(--surface2); border-radius: 8px; padding: 4px; }
+  .tab { flex: 1; padding: 8px 14px; border-radius: 6px; border: none; background: none; color: var(--muted); font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .q-progress { display: flex; gap: 4px; margin-bottom: 20px; }
+  .q-dot { height: 4px; flex: 1; border-radius: 99px; background: rgba(255,255,255,0.1); transition: background 0.3s; }
+  .q-dot.done { background: var(--accent); }
+  .q-dot.current { background: var(--accent2); }
+
+  .notif { position: fixed; top: 16px; right: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 14px; font-weight: 500; z-index: 999; transform: translateX(120%); transition: transform 0.3s; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+  .notif.show { transform: translateX(0); }
+  .notif.success-n { border-color: rgba(61,214,140,0.4); color: var(--green); }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .answer-reveal { padding: 10px 14px; background: rgba(61,214,140,0.1); border: 1px solid rgba(61,214,140,0.3); border-radius: 8px; color: var(--green); font-size: 14px; font-weight: 500; margin-top: 10px; display: none; }
+  .answer-reveal.show { display: block; }
+
+  .players-joined { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title h2 { margin-bottom: 0; }
+
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button { display: none; }
+
+  .game-over-banner { background: linear-gradient(135deg, rgba(124,106,247,0.2), rgba(247,194,106,0.1)); border: 1px solid rgba(124,106,247,0.3); border-radius: 14px; padding: 28px; text-align: center; margin-bottom: 20px; }
+  .game-over-banner h1 { font-family: var(--font-head); font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+  .game-over-banner p { color: var(--muted); font-size: 15px; }
+  .winner-row { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 16px 0; }
+  .winner-name { font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent2); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">Trivia<span>Night</span> <span style="color:var(--muted);font-size:13px;font-weight:400;">Host Dashboard</span></div>
+    <div id="status-pill" class="status-pill">Setup</div>
+  </header>
+
+  <main>
+    <div class="panel" id="left-panel">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('game')">Game</button>
+        <button class="tab" onclick="switchTab('questions')">Questions</button>
+      </div>
+
+      <!-- GAME VIEW -->
+      <div class="view active" id="view-game">
+        <div id="game-status-area">
+          <div id="waiting-state">
+            <div style="text-align:center;padding:40px 20px;">
+              <div style="font-family:var(--font-head);font-size:28px;font-weight:800;margin-bottom:12px;">Ready to host?</div>
+              <div style="color:var(--muted);font-size:15px;margin-bottom:28px;">Share the player link and start when everyone's joined.</div>
+              <div class="share-box" style="text-align:left;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Player Join Link</div>
+                <div class="share-url" id="join-url">Loading...</div>
+                <button class="copy-btn" onclick="copyLink()">Copy link</button>
+              </div>
+              <div class="players-joined" id="players-joined-count">0 players joined</div>
+              <div style="margin-top:24px;">
+                <button class="btn btn-primary" onclick="startGame()" style="font-size:16px;padding:14px 36px;" id="start-btn">Start Game</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="active-state" style="display:none;">
+            <div class="q-progress" id="q-progress"></div>
+            <div class="timer-row">
+              <div class="timer-display" id="timer-display">30</div>
+              <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+              <button class="btn btn-secondary" onclick="toggleTimer()" id="timer-btn" style="padding:8px 14px;font-size:13px;">Pause</button>
+            </div>
+            <div class="q-card">
+              <div class="q-meta">
+                <span class="q-num" id="q-num-label">Q1</span>
+                <span class="q-cat" id="q-cat-label">Category</span>
+              </div>
+              <div class="q-text" id="q-text">Loading question...</div>
+              <div class="options" id="options-grid"></div>
+              <div class="answer-reveal" id="answer-reveal"></div>
+            </div>
+            <div class="controls">
+              <button class="btn btn-success" onclick="revealAnswer()" id="reveal-btn">Reveal Answer</button>
+              <button class="btn btn-primary" onclick="nextQuestion()" id="next-btn" disabled>Next Question</button>
+              <button class="btn btn-secondary" onclick="skipQuestion()">Skip</button>
+            </div>
+            <div style="margin-top:20px;">
+              <div class="section-title">
+                <h2>Live Responses</h2>
+                <span style="font-size:12px;color:var(--muted);" id="resp-count">0 answered</span>
+              </div>
+              <div class="resp-list" id="resp-list"></div>
+            </div>
+          </div>
+
+          <div id="gameover-state" style="display:none;">
+            <div class="game-over-banner">
+              <h1>🎉 Game Over!</h1>
+              <p>Thanks for playing Trivia Night</p>
+              <div class="winner-row">
+                <span style="font-size:36px;">🏆</span>
+                <span class="winner-name" id="winner-name">—</span>
+              </div>
+            </div>
+            <div class="controls">
+              <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUESTIONS VIEW -->
+      <div class="view" id="view-questions">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+          <button class="btn btn-primary" onclick="generateAIQuestions()" id="gen-btn">
+            <span id="gen-btn-text">✦ Generate with AI</span>
+          </button>
+          <button class="btn btn-secondary" onclick="addBlankQuestion()">+ Add blank</button>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">Anthropic API Key</label>
+          <input type="password" id="ai-api-key" placeholder="sk-ant-..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px;color:var(--muted);font-weight:500;display:block;margin-bottom:6px;">AI Generation Topic (optional)</label>
+          <input type="text" id="ai-topic" placeholder="e.g. Tech history, Science, Pop culture..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:8px 12px;outline:none;">
+        </div>
+        <div id="questions-list"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel panel">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">Players</div><div class="stat-value purple" id="stat-players">0</div></div>
+        <div class="stat-card"><div class="stat-label">Question</div><div class="stat-value" id="stat-question">—</div></div>
+        <div class="stat-card"><div class="stat-label">Answered</div><div class="stat-value green" id="stat-answered">0</div></div>
+        <div class="stat-card"><div class="stat-label">Correct</div><div class="stat-value green" id="stat-correct">0</div></div>
+      </div>
+
+      <h2>Leaderboard</h2>
+      <div class="lb-list" id="leaderboard"></div>
+
+      <div style="margin-top:20px;">
+        <div class="section-title"><h2>Settings</h2></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Seconds per question</label>
+            <input type="number" id="time-setting" value="30" min="10" max="120" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Points for correct answer</label>
+            <input type="number" id="points-setting" value="1000" min="100" max="5000" step="100" style="width:100px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// ─── Firebase config — paste your project's values here ──────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyDJ28_e0fMgwZJ7NahQx7gt8_iX2VO2rns",
+  authDomain:        "trivia-127b9.firebaseapp.com",
+  databaseURL:       "https://trivia-127b9-default-rtdb.firebaseio.com",
+  projectId:         "trivia-127b9",
+  storageBucket:     "trivia-127b9.firebasestorage.app",
+  messagingSenderId: "534126219859",
+  appId:             "1:534126219859:web:adb61b3728e25c7d112ca6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
+let questions = [];
+let responses = {};
+let players = {};
+let timerInterval = null;
+let maxTime = 30;
+
+const LETTERS = ['A','B','C','D'];
+
+function showNotif(msg, type='success') {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.className = 'notif show' + (type==='success' ? ' success-n' : '');
+  setTimeout(() => n.className = 'notif', 2800);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['game','questions'][i] === tab));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + tab).classList.add('active');
+}
+
+async function init() {
+  if (firebaseConfig.apiKey === 'PASTE_YOUR_API_KEY_HERE') {
+    showNotif('Firebase not configured — paste your firebaseConfig at the top of this file', 'error');
+    return;
+  }
+
+  document.getElementById('join-url').textContent = window.location.href.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
+
+  const qSnap = await db.ref('questions').get();
+  const savedQ = qSnap.val();
+  if (savedQ) {
+    questions = Array.isArray(savedQ) ? savedQ : Object.values(savedQ);
+  } else {
+    questions = getDefaultQuestions();
+    await db.ref('questions').set(questions);
+  }
+
+  const gsSnap = await db.ref('gameState').get();
+  const savedGame = gsSnap.val();
+  if (savedGame) {
+    gameState = { ...gameState, ...savedGame };
+  } else {
+    await db.ref('gameState').set(gameState);
+  }
+
+  db.ref('players').on('value', snap => {
+    players = snap.val() || {};
+    document.getElementById('stat-players').textContent = Object.keys(players).length;
+    document.getElementById('players-joined-count').textContent = Object.keys(players).length + ' players joined';
+    updateLeaderboard();
+  });
+
+  db.ref('responses').on('value', snap => {
+    responses = snap.val() || {};
+    updateResponses();
+    updateLeaderboard();
+  });
+
+  renderQuestionsEditor();
+  updateUI();
+}
+
+function updateUI() {
+  const s = gameState.status;
+  document.getElementById('waiting-state').style.display = s === 'waiting' ? '' : 'none';
+  document.getElementById('active-state').style.display = s === 'active' ? '' : 'none';
+  document.getElementById('gameover-state').style.display = s === 'gameover' ? '' : 'none';
+  const pill = document.getElementById('status-pill');
+  pill.textContent = s === 'waiting' ? 'Setup' : s === 'active' ? 'Live' : 'Ended';
+  pill.className = 'status-pill' + (s === 'active' ? ' live' : '');
+  if (s === 'active') renderCurrentQuestion();
+  if (s === 'gameover') showWinner();
+  updateLeaderboard();
+  maxTime = parseInt(document.getElementById('time-setting').value) || 30;
+  document.getElementById('stat-question').textContent = s === 'active' ? (gameState.currentQ+1) + '/' + questions.length : '—';
+}
+
+function renderProgressDots() {
+  const c = document.getElementById('q-progress');
+  c.innerHTML = '';
+  questions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'q-dot' + (i < gameState.currentQ ? ' done' : i === gameState.currentQ ? ' current' : '');
+    c.appendChild(d);
+  });
+}
+
+function renderCurrentQuestion() {
+  if (!questions[gameState.currentQ]) return;
+  const q = questions[gameState.currentQ];
+  renderProgressDots();
+  document.getElementById('q-num-label').textContent = 'Q' + (gameState.currentQ+1);
+  document.getElementById('q-cat-label').textContent = q.category || 'General';
+  document.getElementById('q-text').textContent = q.question;
+  document.getElementById('stat-question').textContent = (gameState.currentQ+1) + '/' + questions.length;
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option' + (gameState.revealed ? (i === q.correct ? ' correct' : ' revealed-wrong') : '');
+    div.innerHTML = `<div class="opt-letter">${LETTERS[i]}</div><span>${opt}</span>`;
+    grid.appendChild(div);
+  });
+  const reveal = document.getElementById('answer-reveal');
+  if (gameState.revealed) { reveal.textContent = '✓ Correct: ' + q.options[q.correct]; reveal.classList.add('show'); }
+  else { reveal.classList.remove('show'); }
+  document.getElementById('reveal-btn').disabled = gameState.revealed;
+  document.getElementById('next-btn').disabled = !gameState.revealed;
+}
+
+function startGame() {
+  if (questions.length === 0) { showNotif('Add questions first!', 'error'); return; }
+  gameState.status = 'active'; gameState.currentQ = 0; gameState.revealed = false; gameState.scores = {};
+  for (const pid of Object.keys(players)) players[pid].score = 0;
+  responses = {};
+  db.ref('responses').remove();
+  db.ref('players').set(players);
+  db.ref('gameState').set(gameState);
+  updateUI(); startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  maxTime = parseInt(document.getElementById('time-setting').value) || 30;
+  gameState.timeLeft = maxTime; gameState.timerRunning = true; updateTimer();
+  timerInterval = setInterval(() => {
+    if (!gameState.timerRunning) return;
+    gameState.timeLeft--; updateTimer();
+    if (gameState.timeLeft <= 0) { clearInterval(timerInterval); if (!gameState.revealed) revealAnswer(); }
+  }, 1000);
+}
+
+function updateTimer() {
+  const t = gameState.timeLeft;
+  const el = document.getElementById('timer-display');
+  const bar = document.getElementById('timer-bar');
+  el.textContent = t;
+  el.className = 'timer-display' + (t <= 10 ? ' urgent' : '');
+  bar.style.width = Math.max(0, (t / maxTime) * 100) + '%';
+  bar.className = 'timer-bar' + (t <= 10 ? ' urgent' : '');
+}
+
+function toggleTimer() {
+  gameState.timerRunning = !gameState.timerRunning;
+  document.getElementById('timer-btn').textContent = gameState.timerRunning ? 'Pause' : 'Resume';
+}
+
+function revealAnswer() {
+  gameState.revealed = true; clearInterval(timerInterval); gameState.timerRunning = false;
+  const q = questions[gameState.currentQ];
+  const pts = parseInt(document.getElementById('points-setting').value) || 1000;
+  for (const [pid, presponses] of Object.entries(responses)) {
+    const qKey = 'q' + gameState.currentQ;
+    if (presponses[qKey] !== undefined && presponses[qKey] === q.correct) {
+      if (!players[pid]) players[pid] = { name: pid, score: 0 };
+      players[pid].score = (players[pid].score || 0) + pts;
+      if (!gameState.scores[pid]) gameState.scores[pid] = 0;
+      gameState.scores[pid] += pts;
+    }
+  }
+  db.ref('players').set(players);
+  db.ref('gameState').set(gameState);
+  renderCurrentQuestion(); updateResponses(); updateLeaderboard();
+  document.getElementById('stat-correct').textContent = Object.values(responses).filter(r => r['q'+gameState.currentQ] === q.correct).length;
+}
+
+function nextQuestion() {
+  if (gameState.currentQ >= questions.length - 1) {
+    gameState.status = 'gameover'; db.ref('gameState').set(gameState); updateUI(); return;
+  }
+  gameState.currentQ++; gameState.revealed = false; responses = {};
+  db.ref('responses').remove(); db.ref('gameState').set(gameState);
+  document.getElementById('stat-answered').textContent = 0;
+  document.getElementById('stat-correct').textContent = 0;
+  document.getElementById('resp-list').innerHTML = '';
+  renderCurrentQuestion(); startTimer();
+}
+
+function skipQuestion() { clearInterval(timerInterval); nextQuestion(); }
+
+function updateResponses() {
+  const list = document.getElementById('resp-list');
+  list.innerHTML = '';
+  const q = questions[gameState.currentQ];
+  if (!q) return;
+  const qKey = 'q' + gameState.currentQ;
+  let count = 0;
+  for (const [pid, presponses] of Object.entries(responses)) {
+    if (presponses[qKey] === undefined) continue;
+    count++;
+    const ans = presponses[qKey];
+    const isCorrect = gameState.revealed && ans === q.correct;
+    const isWrong = gameState.revealed && ans !== q.correct;
+    const row = document.createElement('div');
+    row.className = 'resp-row' + (isCorrect ? ' correct-ans' : isWrong ? ' wrong-ans' : '');
+    const name = players[pid]?.name || pid.slice(0,8);
+    row.innerHTML = `<span class="name">${name}</span><span class="ans">${LETTERS[ans]}: ${q.options[ans]}</span>`;
+    list.appendChild(row);
+  }
+  document.getElementById('resp-count').textContent = count + ' answered';
+  document.getElementById('stat-answered').textContent = count;
+}
+
+function updateLeaderboard() {
+  const lb = document.getElementById('leaderboard');
+  const sorted = Object.entries(players)
+    .map(([id, p]) => ({ id, name: p.name || id.slice(0,8), score: p.score || 0 }))
+    .sort((a, b) => b.score - a.score).slice(0, 10);
+  if (sorted.length === 0) { lb.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px;">No players yet</div>'; return; }
+  lb.innerHTML = '';
+  sorted.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row' + (i === 0 ? ' top1' : '');
+    row.innerHTML = `<span class="lb-rank">${i===0?'🏆':i+1}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
+    lb.appendChild(row);
+  });
+}
+
+function showWinner() {
+  const sorted = Object.entries(players)
+    .map(([id, p]) => ({ name: p.name || id.slice(0,8), score: p.score || 0 }))
+    .sort((a,b) => b.score - a.score);
+  if (sorted.length > 0) document.getElementById('winner-name').textContent = sorted[0].name + ' — ' + sorted[0].score.toLocaleString() + ' pts';
+}
+
+async function resetGame() {
+  clearInterval(timerInterval);
+  gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
+  responses = {};
+  for (const pid of Object.keys(players)) players[pid].score = 0;
+  await db.ref('responses').remove();
+  await db.ref('gameState').set(gameState);
+  await db.ref('players').set(players);
+  updateUI();
+}
+
+function copyLink() {
+  const url = document.getElementById('join-url').textContent;
+  navigator.clipboard.writeText(url).then(() => showNotif('Link copied!'));
+}
+
+function getDefaultQuestions() {
+  return [
+    { question: "What does 'HTTP' stand for?", options: ["HyperText Transfer Protocol","High-Tech Transfer Process","Hyper Transfer Text Program","Host Terminal Transfer Port"], correct: 0, category: "Tech" },
+    { question: "Which company developed the Python programming language?", options: ["Google","Microsoft","Python Software Foundation","Oracle"], correct: 2, category: "Tech" },
+    { question: "What year was the first iPhone released?", options: ["2005","2006","2007","2008"], correct: 2, category: "Tech History" },
+    { question: "What is the capital of Japan?", options: ["Seoul","Beijing","Bangkok","Tokyo"], correct: 3, category: "Geography" },
+    { question: "How many bits are in a byte?", options: ["4","8","16","32"], correct: 1, category: "Tech" },
+  ];
+}
+
+function renderQuestionsEditor() {
+  const list = document.getElementById('questions-list');
+  list.innerHTML = '';
+  questions.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.className = 'q-editor';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;">Q${qi+1}</span>
+        <button onclick="removeQuestion(${qi})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;">Remove</button>
+      </div>
+      <label>Question</label>
+      <textarea rows="2" onchange="updateQ(${qi},'question',this.value)">${q.question}</textarea>
+      <label>Category</label>
+      <input type="text" value="${q.category||''}" onchange="updateQ(${qi},'category',this.value)" placeholder="e.g. Tech, Science, Sports">
+      <label>Options (click to mark correct)</label>
+      <div class="opt-inputs">
+        ${q.options.map((opt,oi) => `
+          <div class="opt-in-wrap">
+            <span class="opt-in-label" style="color:${oi===q.correct?'var(--green)':'var(--muted)'}">${LETTERS[oi]}${oi===q.correct?' ✓':''}</span>
+            <input class="opt-in" type="text" value="${opt}" onchange="updateQOption(${qi},${oi},this.value)" onclick="setCorrect(${qi},${oi})" style="border-color:${oi===q.correct?'rgba(61,214,140,0.5)':'var(--border)'}">
+          </div>
+        `).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Click an option field to mark it as the correct answer</div>`;
+    list.appendChild(div);
+  });
+}
+
+function updateQ(qi, field, val) { questions[qi][field] = val; db.ref('questions').set(questions); }
+function updateQOption(qi, oi, val) { questions[qi].options[oi] = val; db.ref('questions').set(questions); }
+function setCorrect(qi, oi) { questions[qi].correct = oi; db.ref('questions').set(questions); renderQuestionsEditor(); }
+function removeQuestion(qi) { questions.splice(qi, 1); db.ref('questions').set(questions); renderQuestionsEditor(); }
+function addBlankQuestion() {
+  questions.push({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
+  db.ref('questions').set(questions); renderQuestionsEditor();
+}
+
+async function generateAIQuestions() {
+  const apiKey = document.getElementById('ai-api-key').value.trim();
+  if (!apiKey) { showNotif('Enter your Anthropic API key first', 'error'); return; }
+  const btn = document.getElementById('gen-btn');
+  const btnText = document.getElementById('gen-btn-text');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> Generating...';
+  const topic = document.getElementById('ai-topic').value.trim();
+  const prompt = `Generate 5 fun multiple choice trivia questions${topic ? ' about: ' + topic : ' covering a mix of categories like Tech, Science, History, Pop Culture, Geography'}.
+Return ONLY valid JSON array, no markdown, no explanation:
+[{"question":"...","options":["A","B","C","D"],"correct":0,"category":"..."}]
+The "correct" field is the 0-based index of the correct option. Make questions challenging but fun for a corporate trivia night.`;
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await resp.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const newQs = JSON.parse(clean);
+    questions = [...questions, ...newQs];
+    await db.ref('questions').set(questions);
+    renderQuestionsEditor();
+    showNotif('Generated ' + newQs.length + ' questions!');
+  } catch(e) { showNotif('Generation failed', 'error'); }
+  btn.disabled = false;
+  btnText.textContent = '✦ Generate with AI';
+}
+
+init();
+</script>
+</body>
+</html>
