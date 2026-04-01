@@ -205,8 +205,9 @@
                 <button class="copy-btn" onclick="copyLink()">Copy link</button>
               </div>
               <div class="players-joined" id="players-joined-count">0 players joined</div>
-              <div style="margin-top:24px;">
+              <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;">
                 <button class="btn btn-primary" onclick="startGame()" style="font-size:16px;padding:14px 36px;" id="start-btn">Start Game</button>
+                <button class="btn btn-secondary" onclick="clearPlayers()">Clear Players</button>
               </div>
             </div>
           </div>
@@ -550,6 +551,14 @@ function showWinner() {
     .map(([id, p]) => ({ name: p.name || id.slice(0,8), score: p.score || 0 }))
     .sort((a,b) => b.score - a.score);
   if (sorted.length > 0) document.getElementById('winner-name').textContent = sorted[0].name + ' — ' + sorted[0].score.toLocaleString() + ' pts';
+}
+
+async function clearPlayers() {
+  players = {};
+  responses = {};
+  await db.ref('players').remove();
+  await db.ref('responses').remove();
+  showNotif('Player list cleared');
 }
 
 async function resetGame() {
