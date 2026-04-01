@@ -242,6 +242,11 @@ async function joinGame() {
 
 // ─── Game state handler ───────────────────────────────────────────────────────
 function onGameStateChange(state) {
+  if (state.status === 'waiting' && gameStatus === 'gameover') {
+    resetToJoin();
+    return;
+  }
+
   if (state.status === 'gameover' && gameStatus !== 'gameover') {
     gameStatus = 'gameover';
     db.ref('players').get().then(snap => showGameOver(snap.val() || {}));
@@ -358,10 +363,10 @@ function showReveal(qi, state) {
 
 // ─── Game over screen ─────────────────────────────────────────────────────────
 function showGameOver(players) {
-  db.ref('gameState').off();
   db.ref('questions').off();
   db.ref('players/' + myId + '/score').off();
   clearInterval(timerInterval);
+  // gameState listener stays alive so we detect when host resets
   showScreen('screen-gameover');
   document.getElementById('final-score').textContent = myScore.toLocaleString();
 
@@ -378,6 +383,18 @@ function showGameOver(players) {
     row.innerHTML = `<span class="lb-rank">${i === 0 ? '🏆' : i + 1}</span><span class="lb-name">${p.name}${p.id === myId ? ' (you)' : ''}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
     lb.appendChild(row);
   });
+}
+
+// ─── Reset to join screen (triggered when host resets after game over) ────────
+function resetToJoin() {
+  db.ref('gameState').off();
+  clearInterval(timerInterval);
+  myId = null; myName = ''; myScore = 0; myAnswers = {};
+  currentQIdx = -1; gameStatus = 'waiting'; questions = [];
+  document.getElementById('name-input').value = '';
+  document.getElementById('name-error').textContent = '';
+  document.getElementById('join-btn').disabled = false;
+  showScreen('screen-join');
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
