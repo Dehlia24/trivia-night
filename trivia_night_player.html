@@ -225,6 +225,10 @@ async function joinGame() {
 
   await db.ref('players/' + myId).set({ name: myName, score: 0 });
 
+  // Remove player and their responses from Firebase when tab closes
+  db.ref('players/' + myId).onDisconnect().remove();
+  db.ref('responses/' + myId).onDisconnect().remove();
+
   document.getElementById('wait-name').textContent = myName;
   showScreen('screen-waiting');
 
