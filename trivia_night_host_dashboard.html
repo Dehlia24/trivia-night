@@ -177,13 +177,36 @@
   .game-over-banner p { color: var(--muted); font-size: 15px; }
   .winner-row { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 16px 0; }
   .winner-name { font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent2); }
+
+  /* ── Light mode ── */
+  html[data-theme="light"] { --bg:#f0f0f0; --surface:#ffffff; --surface2:#e8e8e8; --border:rgba(0,0,0,0.12); --text:#111111; --muted:#555555; }
+  html[data-theme="light"] .option { background: rgba(0,0,0,0.02); }
+  html[data-theme="light"] .opt-letter { background: rgba(0,0,0,0.07); }
+  html[data-theme="light"] .btn-secondary { background: rgba(0,0,0,0.06); }
+  html[data-theme="light"] .btn-secondary:hover { background: rgba(0,0,0,0.1); }
+  html[data-theme="light"] .resp-row { background: rgba(0,0,0,0.03); }
+  html[data-theme="light"] .timer-bar-wrap { background: rgba(0,0,0,0.1); }
+  html[data-theme="light"] .lb-row { background: rgba(0,0,0,0.04); }
+  html[data-theme="light"] .q-dot { background: rgba(0,0,0,0.1); }
+  html[data-theme="light"] .q-editor input,
+  html[data-theme="light"] .q-editor select,
+  html[data-theme="light"] .q-editor textarea { background: rgba(0,0,0,0.04); }
+  html[data-theme="light"] input[type="number"] { background: rgba(0,0,0,0.04) !important; }
+  html[data-theme="light"] .tab.active { box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  html[data-theme="light"] .notif { box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+  html[data-theme="light"] .spinner { border-color: rgba(0,0,0,0.15); border-top-color: #111; }
+  #theme-toggle { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 4px 10px; cursor: pointer; line-height: 1; transition: border-color 0.2s; }
+  #theme-toggle:hover { border-color: var(--accent); }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div class="logo">Trivia<span>Night</span> <span style="color:var(--muted);font-size:13px;font-weight:400;">Host Dashboard</span></div>
-    <div id="status-pill" class="status-pill">Setup</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️</button>
+      <div id="status-pill" class="status-pill">Setup</div>
+    </div>
   </header>
 
   <main>
@@ -776,6 +799,19 @@ async function generateQuestions() {
   btn.disabled = false;
   btnText.textContent = '↓ Fetch Questions';
 }
+
+// ─── Theme (host-local, independent of player preference) ────────────────────
+function applyTheme() {
+  const t = localStorage.getItem('trivia_host_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-toggle').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const next = (localStorage.getItem('trivia_host_theme') || 'dark') === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('trivia_host_theme', next);
+  applyTheme();
+}
+applyTheme();
 
 init();
 </script>
