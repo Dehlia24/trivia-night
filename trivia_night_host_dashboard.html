@@ -262,7 +262,10 @@
       <div class="view" id="view-questions">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Question Bank — <span id="bank-count">0</span> questions</div>
-          <button class="btn btn-secondary" onclick="clearBank()" style="font-size:12px;padding:6px 12px;">Clear all</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary" onclick="resetUsage()" style="font-size:12px;padding:6px 12px;">Reset usage</button>
+            <button class="btn btn-secondary" onclick="clearBank()" style="font-size:12px;padding:6px 12px;">Clear all</button>
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
           <button class="btn btn-primary" onclick="generateQuestions()" id="gen-btn">
@@ -354,12 +357,22 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
-let questions = [];     // active game questions (random sample chosen at start)
-let questionBank = [];  // full pool stored in /questionBank
+let questions = [];       // active game questions (random sample chosen at start)
+let questionBank = [];    // full pool stored in /questionBank
+let usedQuestions = {};   // { fingerprint: timestamp } — persisted in /usedQuestions
 let responses = {};
 let players = {};
 let timerInterval = null;
 let maxTime = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Stable fingerprint for a question (Firebase-safe key)
+function hashQuestion(q) {
+  let h = 0;
+  for (let i = 0; i < q.question.length; i++) h = (Math.imul(31, h) + q.question.charCodeAt(i)) | 0;
+  return 'q' + Math.abs(h).toString(36);
+}
 
 const LETTERS = ['A','B','C','D'];
 
@@ -371,6 +384,17 @@ function showNotif(msg, type='success') {
 }
 
 function saveSetting(key, value) { db.ref('settings/' + key).set(Number(value)); }
+
+function updateBankCount() {
+  const available = questionBank.filter(q => !usedQuestions[hashQuestion(q)]).length;
+  const used = questionBank.length - available;
+  const el = document.getElementById('bank-count');
+  el.textContent = questionBank.length === 0
+    ? '0 questions'
+    : used > 0
+      ? `${questionBank.length} questions — ${available} available, ${used} used in last 24h`
+      : `${questionBank.length} questions`;
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['game','questions'][i] === tab));
@@ -421,7 +445,15 @@ async function init() {
   db.ref('questionBank').on('value', snap => {
     const bank = snap.val();
     questionBank = bank ? (Array.isArray(bank) ? bank : Object.values(bank)) : [];
-    document.getElementById('bank-count').textContent = questionBank.length;
+    updateBankCount();
+  });
+
+  // ── Used questions (tracks which questions were used in the last 24h) ─────────
+  db.ref('usedQuestions').on('value', snap => {
+    const now = Date.now();
+    const raw = snap.val() || {};
+    usedQuestions = Object.fromEntries(Object.entries(raw).filter(([, ts]) => ts > now - DAY_MS));
+    updateBankCount();
   });
 
   // ── Players & responses ───────────────────────────────────────────────────────
@@ -492,9 +524,18 @@ function renderCurrentQuestion() {
 
 function startGame() {
   if (questionBank.length === 0) { showNotif('Add questions to the bank first!', 'error'); return; }
-  const count = Math.min(parseInt(document.getElementById('count-setting').value) || 10, questionBank.length);
-  const shuffled = [...questionBank].sort(() => Math.random() - 0.5);
-  questions = shuffled.slice(0, count);
+  const count = parseInt(document.getElementById('count-setting').value) || 10;
+  const available = questionBank.filter(q => !usedQuestions[hashQuestion(q)]);
+  if (available.length === 0) { showNotif('All questions used in the last 24h — add more or click Reset usage', 'error'); return; }
+  if (available.length < count) showNotif(`Only ${available.length} unused questions available — using all of them`, 'error');
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+  questions = shuffled.slice(0, Math.min(count, available.length));
+
+  // Mark selected questions as used
+  const now = Date.now();
+  const newUsed = { ...usedQuestions };
+  for (const q of questions) newUsed[hashQuestion(q)] = now;
+  db.ref('usedQuestions').set(newUsed);
   gameState.status = 'active'; gameState.currentQ = 0; gameState.revealed = false; gameState.scores = {};
   for (const pid of Object.keys(players)) players[pid].score = 0;
   responses = {};
@@ -686,6 +727,12 @@ function clearBank() {
   questionBank = [];
   db.ref('questionBank').remove();
   renderQuestionsEditor();
+}
+
+function resetUsage() {
+  usedQuestions = {};
+  db.ref('usedQuestions').remove();
+  showNotif('Question usage history cleared');
 }
 
 async function generateQuestions() {
