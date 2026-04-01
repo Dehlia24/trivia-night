@@ -529,7 +529,15 @@ function startGame() {
   if (available.length === 0) { showNotif('All questions used in the last 24h — add more or click Reset usage', 'error'); return; }
   if (available.length < count) showNotif(`Only ${available.length} unused questions available — using all of them`, 'error');
   const shuffled = [...available].sort(() => Math.random() - 0.5);
-  questions = shuffled.slice(0, Math.min(count, available.length));
+  questions = shuffled.slice(0, Math.min(count, available.length)).map(q => {
+    const opts = [...q.options];
+    const correctText = opts[q.correct];
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    return { ...q, options: opts, correct: opts.indexOf(correctText) };
+  });
 
   // Mark selected questions as used
   const now = Date.now();
