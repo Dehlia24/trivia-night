@@ -260,6 +260,10 @@
 
       <!-- QUESTIONS VIEW -->
       <div class="view" id="view-questions">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Question Bank — <span id="bank-count">0</span> questions</div>
+          <button class="btn btn-secondary" onclick="clearBank()" style="font-size:12px;padding:6px 12px;">Clear all</button>
+        </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
           <button class="btn btn-primary" onclick="generateQuestions()" id="gen-btn">
             <span id="gen-btn-text">↓ Fetch Questions</span>
@@ -320,6 +324,10 @@
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Points for correct answer</label>
             <input type="number" id="points-setting" value="1000" min="100" max="5000" step="100" style="width:100px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
           </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Questions per game</label>
+            <input type="number" id="count-setting" value="10" min="1" max="50" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+          </div>
         </div>
       </div>
     </div>
@@ -346,7 +354,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
-let questions = [];
+let questions = [];     // active game questions (random sample chosen at start)
+let questionBank = [];  // full pool stored in /questionBank
 let responses = {};
 let players = {};
 let timerInterval = null;
@@ -375,14 +384,18 @@ async function init() {
 
   document.getElementById('join-url').textContent = window.location.href.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
 
-  const qSnap = await db.ref('questions').get();
+  const qSnap = await db.ref('questionBank').get();
   const savedQ = qSnap.val();
   if (savedQ) {
-    questions = Array.isArray(savedQ) ? savedQ : Object.values(savedQ);
+    questionBank = Array.isArray(savedQ) ? savedQ : Object.values(savedQ);
   } else {
-    questions = getDefaultQuestions();
-    await db.ref('questions').set(questions);
+    questionBank = getDefaultQuestions();
+    await db.ref('questionBank').set(questionBank);
   }
+
+  const activeSnap = await db.ref('questions').get();
+  const activeQ = activeSnap.val();
+  if (activeQ) questions = Array.isArray(activeQ) ? activeQ : Object.values(activeQ);
 
   const gsSnap = await db.ref('gameState').get();
   const savedGame = gsSnap.val();
@@ -458,10 +471,14 @@ function renderCurrentQuestion() {
 }
 
 function startGame() {
-  if (questions.length === 0) { showNotif('Add questions first!', 'error'); return; }
+  if (questionBank.length === 0) { showNotif('Add questions to the bank first!', 'error'); return; }
+  const count = Math.min(parseInt(document.getElementById('count-setting').value) || 10, questionBank.length);
+  const shuffled = [...questionBank].sort(() => Math.random() - 0.5);
+  questions = shuffled.slice(0, count);
   gameState.status = 'active'; gameState.currentQ = 0; gameState.revealed = false; gameState.scores = {};
   for (const pid of Object.keys(players)) players[pid].score = 0;
   responses = {};
+  db.ref('questions').set(questions);
   db.ref('responses').remove();
   db.ref('players').set(players);
   db.ref('gameState').set(gameState);
@@ -607,9 +624,10 @@ function getDefaultQuestions() {
 }
 
 function renderQuestionsEditor() {
+  document.getElementById('bank-count').textContent = questionBank.length;
   const list = document.getElementById('questions-list');
   list.innerHTML = '';
-  questions.forEach((q, qi) => {
+  questionBank.forEach((q, qi) => {
     const div = document.createElement('div');
     div.className = 'q-editor';
     div.innerHTML = `
@@ -635,13 +653,19 @@ function renderQuestionsEditor() {
   });
 }
 
-function updateQ(qi, field, val) { questions[qi][field] = val; db.ref('questions').set(questions); }
-function updateQOption(qi, oi, val) { questions[qi].options[oi] = val; db.ref('questions').set(questions); }
-function setCorrect(qi, oi) { questions[qi].correct = oi; db.ref('questions').set(questions); renderQuestionsEditor(); }
-function removeQuestion(qi) { questions.splice(qi, 1); db.ref('questions').set(questions); renderQuestionsEditor(); }
+function updateQ(qi, field, val) { questionBank[qi][field] = val; db.ref('questionBank').set(questionBank); }
+function updateQOption(qi, oi, val) { questionBank[qi].options[oi] = val; db.ref('questionBank').set(questionBank); }
+function setCorrect(qi, oi) { questionBank[qi].correct = oi; db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
+function removeQuestion(qi) { questionBank.splice(qi, 1); db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
 function addBlankQuestion() {
-  questions.push({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
-  db.ref('questions').set(questions); renderQuestionsEditor();
+  questionBank.push({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
+  db.ref('questionBank').set(questionBank); renderQuestionsEditor();
+}
+function clearBank() {
+  if (!confirm('Clear all ' + questionBank.length + ' questions from the bank?')) return;
+  questionBank = [];
+  db.ref('questionBank').remove();
+  renderQuestionsEditor();
 }
 
 async function generateQuestions() {
@@ -667,8 +691,8 @@ async function generateQuestions() {
       return { question: decode(r.question), options: opts, correct: opts.indexOf(decode(r.correct_answer)), category: decode(r.category) };
     });
 
-    questions = [...questions, ...newQs];
-    await db.ref('questions').set(questions);
+    questionBank = [...questionBank, ...newQs];
+    await db.ref('questionBank').set(questionBank);
     renderQuestionsEditor();
     showNotif('Added ' + newQs.length + ' questions!');
   } catch(e) { showNotif('Fetch failed: ' + e.message, 'error'); }
