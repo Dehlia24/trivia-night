@@ -69,9 +69,12 @@
   .result-banner.timeout-r { background: rgba(247,194,106,0.1); border: 1px solid rgba(247,194,106,0.3); color: var(--accent2); }
 
   .lb-list { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
-  .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); }
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,0.08); border-radius: 8px; border: 1px solid var(--border); }
   .lb-row.me { border-color: rgba(224,36,36,0.4); background: rgba(224,36,36,0.08); }
-  .lb-rank { font-family: var(--font-head); font-size: 13px; font-weight: 800; color: var(--muted); min-width: 22px; }
+  .lb-row.rank-1 { border-color: rgba(255,215,0,0.5); background: rgba(255,215,0,0.1); }
+  .lb-row.rank-2 { border-color: rgba(192,192,192,0.5); background: rgba(192,192,192,0.08); }
+  .lb-row.rank-3 { border-color: rgba(205,127,50,0.5); background: rgba(205,127,50,0.08); }
+  .lb-rank { font-family: var(--font-head); font-size: 14px; font-weight: 800; color: var(--muted); min-width: 22px; }
   .lb-name { flex: 1; font-size: 14px; }
   .lb-score { font-family: var(--font-head); font-size: 16px; font-weight: 800; color: var(--accent); }
 
@@ -379,8 +382,9 @@ function showReveal(qi, state) {
     lb.innerHTML = '';
     sorted.forEach((p, i) => {
       const row = document.createElement('div');
-      row.className = 'lb-row' + (p.id === myId ? ' me' : '');
-      row.innerHTML = `<span class="lb-rank">${i === 0 ? '🏆' : i + 1}</span><span class="lb-name">${p.name}${p.id === myId ? ' (you)' : ''}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
+      const medals = ['🥇','🥈','🥉'];
+      row.className = 'lb-row' + (i < 3 ? ` rank-${i+1}` : '') + (p.id === myId ? ' me' : '');
+      row.innerHTML = `<span class="lb-rank">${i < 3 ? medals[i] : i + 1}</span><span class="lb-name">${p.name}${p.id === myId ? ' (you)' : ''}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
       lb.appendChild(row);
     });
   });

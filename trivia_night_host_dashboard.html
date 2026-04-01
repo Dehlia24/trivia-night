@@ -108,12 +108,13 @@
   .lb-list { display: flex; flex-direction: column; gap: 6px; }
   .lb-row {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-    background: var(--surface2); border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.08); border-radius: 8px; border: 1px solid var(--border);
     transition: all 0.3s;
   }
-  .lb-row.top1 { border-color: rgba(247,194,106,0.4); background: rgba(247,194,106,0.06); }
-  .lb-rank { font-family: var(--font-head); font-size: 12px; font-weight: 800; color: var(--muted); min-width: 20px; }
-  .lb-row.top1 .lb-rank { color: var(--accent2); }
+  .lb-row.rank-1 { border-color: rgba(255,215,0,0.5); background: rgba(255,215,0,0.1); }
+  .lb-row.rank-2 { border-color: rgba(192,192,192,0.5); background: rgba(192,192,192,0.08); }
+  .lb-row.rank-3 { border-color: rgba(205,127,50,0.5); background: rgba(205,127,50,0.08); }
+  .lb-rank { font-family: var(--font-head); font-size: 14px; font-weight: 800; color: var(--muted); min-width: 20px; }
   .lb-name { flex: 1; font-size: 14px; font-weight: 500; }
   .lb-score { font-family: var(--font-head); font-size: 16px; font-weight: 800; color: var(--accent); }
 
@@ -645,8 +646,9 @@ function updateLeaderboard() {
   lb.innerHTML = '';
   sorted.forEach((p, i) => {
     const row = document.createElement('div');
-    row.className = 'lb-row' + (i === 0 ? ' top1' : '');
-    row.innerHTML = `<span class="lb-rank">${i===0?'🏆':i+1}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
+    const medals = ['🥇','🥈','🥉'];
+    row.className = 'lb-row' + (i < 3 ? ` rank-${i+1}` : '');
+    row.innerHTML = `<span class="lb-rank">${i < 3 ? medals[i] : i+1}</span><span class="lb-name">${p.name}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
     lb.appendChild(row);
   });
 }
