@@ -318,15 +318,15 @@
         <div style="display:flex;flex-direction:column;gap:10px;">
           <div>
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Seconds per question</label>
-            <input type="number" id="time-setting" value="30" min="10" max="120" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+            <input type="number" id="time-setting" value="30" min="10" max="120" onchange="saveSetting('timePerQuestion',this.value)" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
           </div>
           <div>
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Points for correct answer</label>
-            <input type="number" id="points-setting" value="1000" min="100" max="5000" step="100" style="width:100px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+            <input type="number" id="points-setting" value="1000" min="100" max="5000" step="100" onchange="saveSetting('pointsPerQuestion',this.value)" style="width:100px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
           </div>
           <div>
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Questions per game</label>
-            <input type="number" id="count-setting" value="10" min="1" max="50" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
+            <input type="number" id="count-setting" value="10" min="1" max="50" onchange="saveSetting('questionsPerGame',this.value)" style="width:80px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;padding:6px 10px;outline:none;">
           </div>
         </div>
       </div>
@@ -370,6 +370,8 @@ function showNotif(msg, type='success') {
   setTimeout(() => n.className = 'notif', 2800);
 }
 
+function saveSetting(key, value) { db.ref('settings/' + key).set(Number(value)); }
+
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['game','questions'][i] === tab));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -393,18 +395,36 @@ async function init() {
     await db.ref('questionBank').set(questionBank);
   }
 
-  const activeSnap = await db.ref('questions').get();
-  const activeQ = activeSnap.val();
-  if (activeQ) questions = Array.isArray(activeQ) ? activeQ : Object.values(activeQ);
+  // ── Game state (syncs game controls across all open host dashboards) ──────────
+  db.ref('gameState').on('value', snap => {
+    const state = snap.val();
+    if (!state) return;
+    gameState = { ...gameState, ...state };
+    updateUI();
+  });
 
-  const gsSnap = await db.ref('gameState').get();
-  const savedGame = gsSnap.val();
-  if (savedGame) {
-    gameState = { ...gameState, ...savedGame };
-  } else {
-    await db.ref('gameState').set(gameState);
-  }
+  // ── Active questions ──────────────────────────────────────────────────────────
+  db.ref('questions').on('value', snap => {
+    const qs = snap.val();
+    if (qs) questions = Array.isArray(qs) ? qs : Object.values(qs);
+  });
 
+  // ── Settings (syncs timer/points/count across all open host dashboards) ───────
+  db.ref('settings').on('value', snap => {
+    const s = snap.val() || {};
+    if (s.timePerQuestion   != null) document.getElementById('time-setting').value   = s.timePerQuestion;
+    if (s.pointsPerQuestion != null) document.getElementById('points-setting').value = s.pointsPerQuestion;
+    if (s.questionsPerGame  != null) document.getElementById('count-setting').value  = s.questionsPerGame;
+  });
+
+  // ── Question bank (syncs count; avoids re-rendering editor mid-edit) ──────────
+  db.ref('questionBank').on('value', snap => {
+    const bank = snap.val();
+    questionBank = bank ? (Array.isArray(bank) ? bank : Object.values(bank)) : [];
+    document.getElementById('bank-count').textContent = questionBank.length;
+  });
+
+  // ── Players & responses ───────────────────────────────────────────────────────
   db.ref('players').on('value', snap => {
     players = snap.val() || {};
     document.getElementById('stat-players').textContent = Object.keys(players).length;
