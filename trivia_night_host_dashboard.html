@@ -641,9 +641,10 @@ The "correct" field is the 0-based index of the correct option. Make questions c
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await resp.json();
+    if (!resp.ok) { showNotif('API error: ' + (data.error?.message || resp.status), 'error'); btn.disabled = false; btnText.textContent = '✦ Generate with AI'; return; }
     const text = data.content.map(i => i.text || '').join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const newQs = JSON.parse(clean);
@@ -651,7 +652,7 @@ The "correct" field is the 0-based index of the correct option. Make questions c
     await db.ref('questions').set(questions);
     renderQuestionsEditor();
     showNotif('Generated ' + newQs.length + ' questions!');
-  } catch(e) { showNotif('Generation failed', 'error'); }
+  } catch(e) { showNotif('Generation failed: ' + e.message, 'error'); }
   btn.disabled = false;
   btnText.textContent = '✦ Generate with AI';
 }
