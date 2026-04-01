@@ -150,6 +150,10 @@
       <span class="score-label">Your Score</span>
       <span class="score-val" id="p-score3">0</span>
     </div>
+    <div style="margin-top:20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Leaderboard</div>
+      <div class="lb-list" id="rv-lb"></div>
+    </div>
   </div>
 
   <!-- GAMEOVER SCREEN -->
@@ -359,6 +363,23 @@ function showReveal(qi, state) {
   } else {
     banner.innerHTML = `<div class="result-banner wrong-r">✗ The correct answer was: ${LETTERS[correct]}: ${q.options[correct]}</div>`;
   }
+
+  // Fetch and render leaderboard
+  db.ref('players').get().then(snap => {
+    const players = snap.val() || {};
+    const sorted = Object.entries(players)
+      .map(([id, p]) => ({ id, name: p.name || id.slice(0, 8), score: p.score || 0 }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+    const lb = document.getElementById('rv-lb');
+    lb.innerHTML = '';
+    sorted.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row' + (p.id === myId ? ' me' : '');
+      row.innerHTML = `<span class="lb-rank">${i === 0 ? '🏆' : i + 1}</span><span class="lb-name">${p.name}${p.id === myId ? ' (you)' : ''}</span><span class="lb-score">${p.score.toLocaleString()}</span>`;
+      lb.appendChild(row);
+    });
+  });
 }
 
 // ─── Game over screen ─────────────────────────────────────────────────────────
