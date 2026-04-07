@@ -104,12 +104,14 @@
   /* ── Monster sidebar ── */
   .monster-sidebar {
     display: flex; flex-direction: column; align-items: center; gap: 12px;
-    flex-shrink: 0; width: 160px; padding-top: 28px; position: relative;
+    flex-shrink: 0; width: 160px; padding-top: 16px; position: relative;
+    background: var(--surface); border: 1px solid rgba(224,36,36,0.35);
+    border-radius: 4px; padding: 16px 12px;
   }
   .monster-svg {
     image-rendering: pixelated; image-rendering: crisp-edges;
     animation: monster-float 2.4s steps(4, end) infinite;
-    filter: drop-shadow(0 6px 0 rgba(0,61,21,0.7));
+    filter: drop-shadow(0 4px 0 #111111);
   }
   @keyframes monster-float {
     0%,100% { transform: translateY(0px); }
@@ -130,23 +132,23 @@
   .monster-svg.eating .mouth-nom    { display: inline; }
   .snack-counter {
     font-family: var(--font-head); font-size: 12px; font-weight: 800;
-    color: #00d455; background: #001a09; border: 2px solid #003d15;
+    color: var(--accent); background: rgba(224,36,36,0.08); border: 2px solid rgba(224,36,36,0.4);
     padding: 3px 12px; letter-spacing: 1px; text-transform: uppercase;
     image-rendering: pixelated;
   }
   .feed-btn {
-    background: #00882d; border: none; color: #ccffdd;
+    background: var(--accent); border: none; color: #ffffff;
     font-family: var(--font-head); font-size: 12px; font-weight: 800;
     padding: 8px 16px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
-    box-shadow: 0 4px 0 #003d15, inset 0 2px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 4px 0 #7a0f0f, inset 0 2px 0 rgba(255,255,255,0.2);
     transition: none; image-rendering: pixelated;
   }
-  .feed-btn:hover  { background: #00aa38; }
-  .feed-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #003d15, inset 0 2px 0 rgba(255,255,255,0.2); }
-  .monster-label { font-size: 10px; color: #00882d; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .feed-btn:hover  { background: #ff3333; }
+  .feed-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7a0f0f, inset 0 2px 0 rgba(255,255,255,0.2); }
+  .monster-label { font-size: 10px; color: var(--accent); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
   .pellet {
     position: absolute; width: 8px; height: 8px; border-radius: 0;
-    background: #00ff66; pointer-events: none; image-rendering: pixelated;
+    background: var(--accent); pointer-events: none; image-rendering: pixelated;
     animation: pellet-fly 0.38s linear forwards;
   }
   @keyframes pellet-fly {
@@ -255,89 +257,89 @@
   <!-- 12×12 pixel-art monster, 8px/cell, 96×96 viewBox displayed at 120×120 -->
   <svg class="monster-svg" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
     <!-- Row 0: top outline -->
-    <rect x="16" y="0"  width="64" height="8" fill="#003d15"/>
+    <rect x="16" y="0"  width="64" height="8" fill="#333333"/>
     <!-- Row 1 -->
-    <rect x="8"  y="8"  width="8"  height="8" fill="#003d15"/>
-    <rect x="16" y="8"  width="16" height="8" fill="#00d455"/>
-    <rect x="32" y="8"  width="16" height="8" fill="#66ffaa"/>
-    <rect x="48" y="8"  width="32" height="8" fill="#00d455"/>
-    <rect x="80" y="8"  width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="8"  width="8"  height="8" fill="#333333"/>
+    <rect x="16" y="8"  width="16" height="8" fill="#aaaaaa"/>
+    <rect x="32" y="8"  width="16" height="8" fill="#cccccc"/>
+    <rect x="48" y="8"  width="32" height="8" fill="#aaaaaa"/>
+    <rect x="80" y="8"  width="8"  height="8" fill="#333333"/>
     <!-- Row 2 -->
-    <rect x="0"  y="16" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="16" width="16" height="8" fill="#00d455"/>
-    <rect x="24" y="16" width="16" height="8" fill="#66ffaa"/>
-    <rect x="40" y="16" width="48" height="8" fill="#00d455"/>
-    <rect x="88" y="16" width="8"  height="8" fill="#003d15"/>
+    <rect x="0"  y="16" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="16" width="16" height="8" fill="#aaaaaa"/>
+    <rect x="24" y="16" width="16" height="8" fill="#cccccc"/>
+    <rect x="40" y="16" width="48" height="8" fill="#aaaaaa"/>
+    <rect x="88" y="16" width="8"  height="8" fill="#333333"/>
     <!-- Row 3: eyes (top half) -->
-    <rect x="0"  y="24" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="24" width="8"  height="8" fill="#00d455"/>
+    <rect x="0"  y="24" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="24" width="8"  height="8" fill="#aaaaaa"/>
     <rect x="16" y="24" width="16" height="8" fill="#ffffff"/>
-    <rect x="32" y="24" width="32" height="8" fill="#00d455"/>
+    <rect x="32" y="24" width="32" height="8" fill="#aaaaaa"/>
     <rect x="64" y="24" width="16" height="8" fill="#ffffff"/>
-    <rect x="80" y="24" width="8"  height="8" fill="#00d455"/>
-    <rect x="88" y="24" width="8"  height="8" fill="#003d15"/>
+    <rect x="80" y="24" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="88" y="24" width="8"  height="8" fill="#333333"/>
     <!-- Row 4: eyes (pupils) -->
-    <rect x="0"  y="32" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="32" width="8"  height="8" fill="#00d455"/>
+    <rect x="0"  y="32" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="32" width="8"  height="8" fill="#aaaaaa"/>
     <rect x="16" y="32" width="8"  height="8" fill="#ffffff"/>
     <rect x="24" y="32" width="8"  height="8" fill="#111111"/>
-    <rect x="32" y="32" width="32" height="8" fill="#00d455"/>
+    <rect x="32" y="32" width="32" height="8" fill="#aaaaaa"/>
     <rect x="64" y="32" width="8"  height="8" fill="#ffffff"/>
     <rect x="72" y="32" width="8"  height="8" fill="#111111"/>
-    <rect x="80" y="32" width="8"  height="8" fill="#00d455"/>
-    <rect x="88" y="32" width="8"  height="8" fill="#003d15"/>
+    <rect x="80" y="32" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="88" y="32" width="8"  height="8" fill="#333333"/>
     <!-- Row 5: cheeks -->
-    <rect x="0"  y="40" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="40" width="80" height="8" fill="#00d455"/>
-    <rect x="88" y="40" width="8"  height="8" fill="#003d15"/>
+    <rect x="0"  y="40" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="40" width="80" height="8" fill="#aaaaaa"/>
+    <rect x="88" y="40" width="8"  height="8" fill="#333333"/>
     <!-- Row 6: mouth-corners -->
-    <rect x="0"  y="48" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="48" width="16" height="8" fill="#00d455"/>
-    <rect x="24" y="48" width="16" height="8" fill="#003d15"/>
-    <rect x="40" y="48" width="16" height="8" fill="#00d455"/>
-    <rect x="56" y="48" width="16" height="8" fill="#003d15"/>
-    <rect x="72" y="48" width="16" height="8" fill="#00d455"/>
-    <rect x="88" y="48" width="8"  height="8" fill="#003d15"/>
+    <rect x="0"  y="48" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="48" width="16" height="8" fill="#aaaaaa"/>
+    <rect x="24" y="48" width="16" height="8" fill="#333333"/>
+    <rect x="40" y="48" width="16" height="8" fill="#aaaaaa"/>
+    <rect x="56" y="48" width="16" height="8" fill="#333333"/>
+    <rect x="72" y="48" width="16" height="8" fill="#aaaaaa"/>
+    <rect x="88" y="48" width="8"  height="8" fill="#333333"/>
     <!-- Row 7: mouth (normal — teeth) -->
     <g class="mouth-normal">
-      <rect x="0"  y="56" width="8"  height="8" fill="#003d15"/>
-      <rect x="8"  y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="0"  y="56" width="8"  height="8" fill="#333333"/>
+      <rect x="8"  y="56" width="8"  height="8" fill="#aaaaaa"/>
       <rect x="16" y="56" width="8"  height="8" fill="#000000"/>
       <rect x="24" y="56" width="16" height="8" fill="#ffffff"/>
       <rect x="40" y="56" width="16" height="8" fill="#000000"/>
       <rect x="56" y="56" width="16" height="8" fill="#ffffff"/>
       <rect x="72" y="56" width="8"  height="8" fill="#000000"/>
-      <rect x="80" y="56" width="8"  height="8" fill="#00d455"/>
-      <rect x="88" y="56" width="8"  height="8" fill="#003d15"/>
+      <rect x="80" y="56" width="8"  height="8" fill="#aaaaaa"/>
+      <rect x="88" y="56" width="8"  height="8" fill="#333333"/>
     </g>
     <!-- Row 7: mouth (nom — open) -->
     <g class="mouth-nom" style="display:none">
-      <rect x="0"  y="56" width="8"  height="8" fill="#003d15"/>
-      <rect x="8"  y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="0"  y="56" width="8"  height="8" fill="#333333"/>
+      <rect x="8"  y="56" width="8"  height="8" fill="#aaaaaa"/>
       <rect x="16" y="56" width="64" height="8" fill="#000000"/>
-      <rect x="80" y="56" width="8"  height="8" fill="#00d455"/>
-      <rect x="88" y="56" width="8"  height="8" fill="#003d15"/>
+      <rect x="80" y="56" width="8"  height="8" fill="#aaaaaa"/>
+      <rect x="88" y="56" width="8"  height="8" fill="#333333"/>
     </g>
     <!-- Row 8: chin outline -->
-    <rect x="0"  y="64" width="8"  height="8" fill="#003d15"/>
-    <rect x="8"  y="64" width="8"  height="8" fill="#00d455"/>
-    <rect x="16" y="64" width="64" height="8" fill="#003d15"/>
-    <rect x="80" y="64" width="8"  height="8" fill="#00d455"/>
-    <rect x="88" y="64" width="8"  height="8" fill="#003d15"/>
+    <rect x="0"  y="64" width="8"  height="8" fill="#333333"/>
+    <rect x="8"  y="64" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="16" y="64" width="64" height="8" fill="#333333"/>
+    <rect x="80" y="64" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="88" y="64" width="8"  height="8" fill="#333333"/>
     <!-- Row 9: body -->
-    <rect x="8"  y="72" width="8"  height="8" fill="#003d15"/>
-    <rect x="16" y="72" width="64" height="8" fill="#00d455"/>
-    <rect x="80" y="72" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="72" width="8"  height="8" fill="#333333"/>
+    <rect x="16" y="72" width="64" height="8" fill="#aaaaaa"/>
+    <rect x="80" y="72" width="8"  height="8" fill="#333333"/>
     <!-- Row 10: feet -->
-    <rect x="16" y="80" width="8"  height="8" fill="#003d15"/>
-    <rect x="24" y="80" width="8"  height="8" fill="#00d455"/>
-    <rect x="32" y="80" width="8"  height="8" fill="#003d15"/>
-    <rect x="56" y="80" width="8"  height="8" fill="#003d15"/>
-    <rect x="64" y="80" width="8"  height="8" fill="#00d455"/>
-    <rect x="72" y="80" width="8"  height="8" fill="#003d15"/>
+    <rect x="16" y="80" width="8"  height="8" fill="#333333"/>
+    <rect x="24" y="80" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="32" y="80" width="8"  height="8" fill="#333333"/>
+    <rect x="56" y="80" width="8"  height="8" fill="#333333"/>
+    <rect x="64" y="80" width="8"  height="8" fill="#aaaaaa"/>
+    <rect x="72" y="80" width="8"  height="8" fill="#333333"/>
     <!-- Row 11: feet base -->
-    <rect x="16" y="88" width="16" height="8" fill="#003d15"/>
-    <rect x="56" y="88" width="16" height="8" fill="#003d15"/>
+    <rect x="16" y="88" width="16" height="8" fill="#333333"/>
+    <rect x="56" y="88" width="16" height="8" fill="#333333"/>
     <!-- Invisible mouth target for pellet homing -->
     <rect id="mouth-target" x="16" y="52" width="64" height="12" fill="transparent"/>
   </svg>
