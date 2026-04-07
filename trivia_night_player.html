@@ -254,17 +254,17 @@
 
 <!-- ── Monster sidebar ──────────────────────────────────────────────────── -->
 <div class="monster-sidebar">
-  <!-- 18×16 chibi water sprite, 6px/cell, 108×96 viewBox displayed at 140×124 -->
+  <!-- 18×16 chibi water sprite — 32-bit style, smaller ears, no blush -->
   <svg class="monster-svg" viewBox="0 0 108 96" xmlns="http://www.w3.org/2000/svg" width="140" height="124">
-    <!-- Row 0: head top -->
+    <!-- Row 0: head top outline -->
     <rect x="24" y="0"  width="60" height="6" fill="#003d7a"/>
-    <!-- Row 1: highlight band -->
+    <!-- Row 1: specular highlight (bright top) -->
     <rect x="24" y="6"  width="6"  height="6" fill="#003d7a"/>
     <rect x="30" y="6"  width="12" height="6" fill="#55bbff"/>
-    <rect x="42" y="6"  width="24" height="6" fill="#aaddff"/>
+    <rect x="42" y="6"  width="24" height="6" fill="#cceeff"/>
     <rect x="66" y="6"  width="12" height="6" fill="#55bbff"/>
     <rect x="78" y="6"  width="6"  height="6" fill="#003d7a"/>
-    <!-- Row 2: wider head, corner highlights -->
+    <!-- Row 2: mid highlight, wider head -->
     <rect x="18" y="12" width="6"  height="6" fill="#003d7a"/>
     <rect x="24" y="12" width="6"  height="6" fill="#55bbff"/>
     <rect x="30" y="12" width="12" height="6" fill="#aaddff"/>
@@ -272,28 +272,31 @@
     <rect x="66" y="12" width="12" height="6" fill="#aaddff"/>
     <rect x="78" y="12" width="6"  height="6" fill="#55bbff"/>
     <rect x="84" y="12" width="6"  height="6" fill="#003d7a"/>
-    <!-- Row 3: fin ears begin -->
-    <rect x="6"  y="18" width="6"  height="6" fill="#003d7a"/>
-    <rect x="12" y="18" width="12" height="6" fill="#44aaee"/>
+    <!-- Row 3: narrow fin tips (1px wide each side) -->
+    <rect x="12" y="18" width="6"  height="6" fill="#003d7a"/>
+    <rect x="18" y="18" width="6"  height="6" fill="#44aaee"/>
     <rect x="24" y="18" width="6"  height="6" fill="#003d7a"/>
     <rect x="30" y="18" width="54" height="6" fill="#55bbff"/>
     <rect x="84" y="18" width="6"  height="6" fill="#003d7a"/>
-    <rect x="90" y="18" width="12" height="6" fill="#44aaee"/>
-    <rect x="102" y="18" width="6" height="6" fill="#003d7a"/>
-    <!-- Row 4: fin ears wide + eyes (top white) -->
-    <rect x="0"  y="24" width="6"  height="6" fill="#003d7a"/>
-    <rect x="6"  y="24" width="18" height="6" fill="#44aaee"/>
+    <rect x="90" y="18" width="6"  height="6" fill="#44aaee"/>
+    <rect x="96" y="18" width="6"  height="6" fill="#003d7a"/>
+    <!-- Row 4: 2px fin ears (shaded) + eyes top 3px white -->
+    <rect x="6"  y="24" width="6"  height="6" fill="#003d7a"/>
+    <rect x="12" y="24" width="6"  height="6" fill="#3388cc"/>
+    <rect x="18" y="24" width="6"  height="6" fill="#44aaee"/>
     <rect x="24" y="24" width="6"  height="6" fill="#003d7a"/>
     <rect x="30" y="24" width="6"  height="6" fill="#55bbff"/>
     <rect x="36" y="24" width="18" height="6" fill="#ffffff"/>
     <rect x="54" y="24" width="12" height="6" fill="#55bbff"/>
     <rect x="66" y="24" width="18" height="6" fill="#ffffff"/>
     <rect x="84" y="24" width="6"  height="6" fill="#003d7a"/>
-    <rect x="90" y="24" width="12" height="6" fill="#44aaee"/>
+    <rect x="90" y="24" width="6"  height="6" fill="#44aaee"/>
+    <rect x="96" y="24" width="6"  height="6" fill="#3388cc"/>
     <rect x="102" y="24" width="6" height="6" fill="#003d7a"/>
-    <!-- Row 5: fin ears + eyes (iris) -->
-    <rect x="0"  y="30" width="6"  height="6" fill="#003d7a"/>
-    <rect x="6"  y="30" width="18" height="6" fill="#44aaee"/>
+    <!-- Row 5: 2px fin ears (shaded) + eyes iris -->
+    <rect x="6"  y="30" width="6"  height="6" fill="#003d7a"/>
+    <rect x="12" y="30" width="6"  height="6" fill="#3388cc"/>
+    <rect x="18" y="30" width="6"  height="6" fill="#44aaee"/>
     <rect x="24" y="30" width="6"  height="6" fill="#003d7a"/>
     <rect x="30" y="30" width="6"  height="6" fill="#55bbff"/>
     <rect x="36" y="30" width="6"  height="6" fill="#ffffff"/>
@@ -302,11 +305,13 @@
     <rect x="66" y="30" width="6"  height="6" fill="#ffffff"/>
     <rect x="72" y="30" width="12" height="6" fill="#2299ee"/>
     <rect x="84" y="30" width="6"  height="6" fill="#003d7a"/>
-    <rect x="90" y="30" width="12" height="6" fill="#44aaee"/>
+    <rect x="90" y="30" width="6"  height="6" fill="#44aaee"/>
+    <rect x="96" y="30" width="6"  height="6" fill="#3388cc"/>
     <rect x="102" y="30" width="6" height="6" fill="#003d7a"/>
-    <!-- Row 6: fin ears + eyes (pupil + shine) -->
-    <rect x="0"  y="36" width="6"  height="6" fill="#003d7a"/>
-    <rect x="6"  y="36" width="18" height="6" fill="#44aaee"/>
+    <!-- Row 6: 2px fin ears (shaded) + eyes pupil -->
+    <rect x="6"  y="36" width="6"  height="6" fill="#003d7a"/>
+    <rect x="12" y="36" width="6"  height="6" fill="#3388cc"/>
+    <rect x="18" y="36" width="6"  height="6" fill="#44aaee"/>
     <rect x="24" y="36" width="6"  height="6" fill="#003d7a"/>
     <rect x="30" y="36" width="6"  height="6" fill="#55bbff"/>
     <rect x="36" y="36" width="6"  height="6" fill="#ffffff"/>
@@ -317,72 +322,74 @@
     <rect x="72" y="36" width="6"  height="6" fill="#2299ee"/>
     <rect x="78" y="36" width="6"  height="6" fill="#111111"/>
     <rect x="84" y="36" width="6"  height="6" fill="#003d7a"/>
-    <rect x="90" y="36" width="12" height="6" fill="#44aaee"/>
+    <rect x="90" y="36" width="6"  height="6" fill="#44aaee"/>
+    <rect x="96" y="36" width="6"  height="6" fill="#3388cc"/>
     <rect x="102" y="36" width="6" height="6" fill="#003d7a"/>
-    <!-- Row 7: fin ears end -->
-    <rect x="6"  y="42" width="6"  height="6" fill="#003d7a"/>
-    <rect x="12" y="42" width="12" height="6" fill="#44aaee"/>
-    <rect x="24" y="42" width="6"  height="6" fill="#003d7a"/>
-    <rect x="30" y="42" width="54" height="6" fill="#55bbff"/>
+    <!-- Row 7: fins end, head widens -->
+    <rect x="18" y="42" width="6"  height="6" fill="#003d7a"/>
+    <rect x="24" y="42" width="60" height="6" fill="#55bbff"/>
     <rect x="84" y="42" width="6"  height="6" fill="#003d7a"/>
-    <rect x="90" y="42" width="12" height="6" fill="#44aaee"/>
-    <rect x="102" y="42" width="6" height="6" fill="#003d7a"/>
-    <!-- Row 8: blush marks -->
+    <!-- Row 8: mid face (no blush) -->
     <rect x="18" y="48" width="6"  height="6" fill="#003d7a"/>
-    <rect x="24" y="48" width="6"  height="6" fill="#55bbff"/>
-    <rect x="30" y="48" width="12" height="6" fill="#ffaacc"/>
-    <rect x="42" y="48" width="24" height="6" fill="#55bbff"/>
-    <rect x="66" y="48" width="12" height="6" fill="#ffaacc"/>
-    <rect x="78" y="48" width="6"  height="6" fill="#55bbff"/>
+    <rect x="24" y="48" width="60" height="6" fill="#55bbff"/>
     <rect x="84" y="48" width="6"  height="6" fill="#003d7a"/>
-    <!-- Row 9: lower face -->
+    <!-- Row 9: lower face, shadow starts on sides -->
     <rect x="18" y="54" width="6"  height="6" fill="#003d7a"/>
-    <rect x="24" y="54" width="60" height="6" fill="#55bbff"/>
+    <rect x="24" y="54" width="6"  height="6" fill="#1a88cc"/>
+    <rect x="30" y="54" width="48" height="6" fill="#55bbff"/>
+    <rect x="78" y="54" width="6"  height="6" fill="#1a88cc"/>
     <rect x="84" y="54" width="6"  height="6" fill="#003d7a"/>
-    <!-- Rows 10-11: mouth normal (cute ω smile) -->
+    <!-- Rows 10-11: mouth normal (ω smile) -->
     <g class="mouth-normal">
       <rect x="18" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="60" width="12" height="6" fill="#55bbff"/>
+      <rect x="24" y="60" width="6"  height="6" fill="#1a88cc"/>
+      <rect x="30" y="60" width="6"  height="6" fill="#55bbff"/>
       <rect x="36" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="42" y="60" width="24" height="6" fill="#55bbff"/>
       <rect x="66" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="72" y="60" width="12" height="6" fill="#55bbff"/>
+      <rect x="72" y="60" width="6"  height="6" fill="#55bbff"/>
+      <rect x="78" y="60" width="6"  height="6" fill="#1a88cc"/>
       <rect x="84" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="18" y="66" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="66" width="18" height="6" fill="#55bbff"/>
+      <rect x="24" y="66" width="18" height="6" fill="#1a88cc"/>
       <rect x="42" y="66" width="24" height="6" fill="#003d7a"/>
-      <rect x="66" y="66" width="18" height="6" fill="#55bbff"/>
+      <rect x="66" y="66" width="18" height="6" fill="#1a88cc"/>
       <rect x="84" y="66" width="6"  height="6" fill="#003d7a"/>
     </g>
     <!-- Rows 10-11: mouth nom (wide open) -->
     <g class="mouth-nom" style="display:none">
       <rect x="18" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="60" width="12" height="6" fill="#55bbff"/>
+      <rect x="24" y="60" width="6"  height="6" fill="#1a88cc"/>
+      <rect x="30" y="60" width="6"  height="6" fill="#55bbff"/>
       <rect x="36" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="42" y="60" width="24" height="6" fill="#000000"/>
       <rect x="66" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="72" y="60" width="12" height="6" fill="#55bbff"/>
+      <rect x="72" y="60" width="6"  height="6" fill="#55bbff"/>
+      <rect x="78" y="60" width="6"  height="6" fill="#1a88cc"/>
       <rect x="84" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="18" y="66" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="66" width="18" height="6" fill="#55bbff"/>
+      <rect x="24" y="66" width="18" height="6" fill="#1a88cc"/>
       <rect x="42" y="66" width="24" height="6" fill="#000000"/>
-      <rect x="66" y="66" width="18" height="6" fill="#55bbff"/>
+      <rect x="66" y="66" width="18" height="6" fill="#1a88cc"/>
       <rect x="84" y="66" width="6"  height="6" fill="#003d7a"/>
     </g>
-    <!-- Row 12: chin -->
+    <!-- Row 12: chin, shadow on sides -->
     <rect x="24" y="72" width="6"  height="6" fill="#003d7a"/>
-    <rect x="30" y="72" width="54" height="6" fill="#55bbff"/>
+    <rect x="30" y="72" width="6"  height="6" fill="#1a88cc"/>
+    <rect x="36" y="72" width="36" height="6" fill="#55bbff"/>
+    <rect x="72" y="72" width="6"  height="6" fill="#1a88cc"/>
+    <rect x="78" y="72" width="6"  height="6" fill="#55bbff"/>
     <rect x="84" y="72" width="6"  height="6" fill="#003d7a"/>
-    <!-- Row 13: body -->
+    <!-- Row 13: body (shadow tone) -->
     <rect x="30" y="78" width="12" height="6" fill="#003d7a"/>
-    <rect x="42" y="78" width="24" height="6" fill="#55bbff"/>
+    <rect x="42" y="78" width="24" height="6" fill="#1a88cc"/>
     <rect x="66" y="78" width="12" height="6" fill="#003d7a"/>
-    <!-- Row 14: feet -->
+    <!-- Row 14: feet (shadow tone) -->
     <rect x="36" y="84" width="6"  height="6" fill="#003d7a"/>
-    <rect x="42" y="84" width="6"  height="6" fill="#55bbff"/>
+    <rect x="42" y="84" width="6"  height="6" fill="#1a88cc"/>
     <rect x="48" y="84" width="6"  height="6" fill="#003d7a"/>
     <rect x="60" y="84" width="6"  height="6" fill="#003d7a"/>
-    <rect x="66" y="84" width="6"  height="6" fill="#55bbff"/>
+    <rect x="66" y="84" width="6"  height="6" fill="#1a88cc"/>
     <rect x="72" y="84" width="6"  height="6" fill="#003d7a"/>
     <!-- Row 15: feet base -->
     <rect x="36" y="90" width="12" height="6" fill="#003d7a"/>
