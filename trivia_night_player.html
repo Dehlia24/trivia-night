@@ -14,7 +14,8 @@
     --font-head: 'Nunito', sans-serif; --font-body: 'Inter', sans-serif;
   }
   body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 32px 28px; width: 100%; max-width: 480px; }
+  .game-wrapper { display: flex; align-items: flex-start; gap: 28px; width: 100%; max-width: 780px; justify-content: center; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 36px 32px; width: 100%; max-width: 560px; flex: 1; min-width: 0; }
   .logo { font-family: var(--font-head); font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 28px; }
   .logo span { color: var(--accent); }
 
@@ -99,9 +100,71 @@
   html[data-theme="light"] input[type="text"] { background: var(--surface2); }
   #theme-toggle { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 4px 10px; cursor: pointer; line-height: 1; transition: border-color 0.2s; }
   #theme-toggle:hover { border-color: var(--accent); }
+
+  /* ── Monster sidebar ── */
+  .monster-sidebar {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    flex-shrink: 0; width: 160px; padding-top: 28px; position: relative;
+  }
+  .monster-svg {
+    animation: monster-float 3s ease-in-out infinite;
+    filter: drop-shadow(0 6px 18px rgba(46,204,113,0.25));
+    overflow: visible;
+  }
+  @keyframes monster-float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  @keyframes monster-nom {
+    0%   { transform: translateY(0)   scale(1)    rotate(0deg); }
+    20%  { transform: translateY(-7px) scale(1.06) rotate(-4deg); }
+    45%  { transform: translateY(-11px) scale(1.09) rotate(4deg); }
+    70%  { transform: translateY(-5px) scale(1.03) rotate(-1deg); }
+    100% { transform: translateY(0)   scale(1)    rotate(0deg); }
+  }
+  .monster-svg.eating { animation: monster-nom 0.5s ease forwards; }
+  .monster-svg.eating .mouth-smile { display: none; }
+  .monster-svg.eating .mouth-nom   { display: block !important; }
+  .monster-svg.eating #lpupil { transform: translate(2px, 5px); }
+  .monster-svg.eating #rpupil { transform: translate(-2px, 5px); }
+  .snack-counter {
+    font-family: var(--font-head); font-size: 13px; font-weight: 700;
+    color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 99px; padding: 3px 14px;
+  }
+  .feed-btn {
+    background: rgba(46,204,113,0.12); border: 1.5px solid rgba(46,204,113,0.35);
+    color: #2ecc71; font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    padding: 9px 20px; border-radius: 99px; cursor: pointer; transition: all 0.15s;
+  }
+  .feed-btn:hover  { background: rgba(46,204,113,0.24); transform: scale(1.06); }
+  .feed-btn:active { transform: scale(0.95); }
+  .monster-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
+  .pellet {
+    position: absolute; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--accent); left: 50%; bottom: 58px;
+    transform: translateX(-50%); pointer-events: none;
+    animation: pellet-rise 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+  @keyframes pellet-rise {
+    0%   { transform: translateX(-50%) translateY(0)     scale(1);   opacity: 1; }
+    65%  { opacity: 1; }
+    100% { transform: translateX(-50%) translateY(-160px) scale(0.3); opacity: 0; }
+  }
+  @media (max-width: 720px) {
+    .game-wrapper { flex-direction: column; align-items: center; }
+    .monster-sidebar {
+      flex-direction: row; width: 100%; max-width: 560px;
+      padding: 16px 20px; padding-top: 16px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 18px;
+      justify-content: center; gap: 20px;
+    }
+    .monster-svg { width: 90px; height: 98px; }
+  }
 </style>
 </head>
 <body>
+<div class="game-wrapper">
 <div class="card">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
     <div class="logo" style="margin-bottom:0;">Trivia<span>Night</span></div>
@@ -183,6 +246,54 @@
     </div>
   </div>
 </div>
+
+<!-- ── Monster sidebar ──────────────────────────────────────────────────── -->
+<div class="monster-sidebar">
+  <svg class="monster-svg" viewBox="0 0 140 172" xmlns="http://www.w3.org/2000/svg" width="140" height="172">
+    <!-- Fedora hat -->
+    <rect x="35" y="5" width="70" height="32" rx="11" fill="#e74c3c"/>
+    <ellipse cx="70" cy="37" rx="48" ry="9" fill="#c0392b"/>
+    <rect x="35" y="29" width="70" height="9" fill="#922b21"/>
+    <ellipse cx="57" cy="14" rx="10" ry="4.5" fill="rgba(255,255,255,0.18)" transform="rotate(-18 57 14)"/>
+    <!-- Body -->
+    <ellipse cx="70" cy="122" rx="37" ry="30" fill="#27ae60"/>
+    <!-- Head -->
+    <circle cx="70" cy="80" r="40" fill="#2ecc71"/>
+    <!-- Head sheen -->
+    <ellipse cx="56" cy="63" rx="9" ry="5" fill="rgba(255,255,255,0.2)" transform="rotate(-22 56 63)"/>
+    <!-- Left arm -->
+    <ellipse cx="29" cy="112" rx="9" ry="17" fill="#27ae60" transform="rotate(22 29 112)"/>
+    <circle cx="23" cy="127" r="8" fill="#2ecc71"/>
+    <!-- Right arm -->
+    <ellipse cx="111" cy="112" rx="9" ry="17" fill="#27ae60" transform="rotate(-22 111 112)"/>
+    <circle cx="117" cy="127" r="8" fill="#2ecc71"/>
+    <!-- Left eye -->
+    <circle cx="54" cy="76" r="13" fill="white"/>
+    <circle id="lpupil" cx="57" cy="79" r="7" fill="#111"/>
+    <circle cx="60" cy="74" r="2.5" fill="white"/>
+    <!-- Right eye -->
+    <circle cx="86" cy="76" r="13" fill="white"/>
+    <circle id="rpupil" cx="83" cy="79" r="7" fill="#111"/>
+    <circle cx="88" cy="72" r="2.5" fill="white"/>
+    <!-- Smile (normal) -->
+    <path class="mouth-smile" d="M 54 96 Q 70 108 86 96" fill="none" stroke="#1a6e3c" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- Open mouth (nom) -->
+    <g class="mouth-nom" style="display:none">
+      <ellipse cx="70" cy="99" rx="14" ry="11" fill="#111"/>
+      <ellipse cx="70" cy="91" rx="14" ry="5" fill="#2ecc71"/>
+      <ellipse cx="70" cy="104" rx="8" ry="5" fill="#e74c3c"/>
+      <rect x="60" y="90" width="8" height="5" rx="2" fill="white"/>
+      <rect x="72" y="90" width="8" height="5" rx="2" fill="white"/>
+    </g>
+    <!-- Feet -->
+    <ellipse cx="56" cy="150" rx="12" ry="6" fill="#27ae60"/>
+    <ellipse cx="84" cy="150" rx="12" ry="6" fill="#27ae60"/>
+  </svg>
+  <div class="snack-counter">🍪 <span id="snack-count">0</span></div>
+  <button class="feed-btn" onclick="feedMonster()">Feed me!</button>
+  <div class="monster-label">Hungry lil guy</div>
+</div>
+</div><!-- end .game-wrapper -->
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -454,6 +565,28 @@ function toggleTheme() {
   applyTheme();
 }
 applyTheme();
+
+// ─── Monster ──────────────────────────────────────────────────────────────────
+let snackCount = 0;
+function feedMonster() {
+  snackCount++;
+  document.getElementById('snack-count').textContent = snackCount;
+
+  // Launch a pellet from the button up toward the monster
+  const pellet = document.createElement('div');
+  pellet.className = 'pellet';
+  document.querySelector('.monster-sidebar').appendChild(pellet);
+  pellet.addEventListener('animationend', () => pellet.remove());
+
+  // Trigger nom when pellet arrives (~0.4s into 0.55s flight)
+  setTimeout(() => {
+    const svg = document.querySelector('.monster-svg');
+    svg.classList.remove('eating');
+    void svg.offsetWidth; // force reflow so animation restarts
+    svg.classList.add('eating');
+    setTimeout(() => svg.classList.remove('eating'), 520);
+  }, 380);
+}
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
