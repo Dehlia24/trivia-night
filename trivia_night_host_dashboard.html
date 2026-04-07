@@ -550,6 +550,24 @@ function renderCurrentQuestion() {
   document.getElementById('next-btn').disabled = !gameState.revealed;
 }
 
+function spreadByCategory(qs) {
+  const groups = {};
+  for (const q of qs) {
+    const cat = q.category || 'General';
+    (groups[cat] || (groups[cat] = [])).push(q);
+  }
+  // Randomise category order, then interleave round-robin (one per category per pass)
+  const cats = Object.keys(groups).sort(() => Math.random() - 0.5);
+  const result = [];
+  const maxLen = Math.max(...cats.map(c => groups[c].length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const cat of cats) {
+      if (i < groups[cat].length) result.push(groups[cat][i]);
+    }
+  }
+  return result;
+}
+
 function startGame() {
   if (questionBank.length === 0) { showNotif('Add questions to the bank first!', 'error'); return; }
   const count = parseInt(document.getElementById('count-setting').value) || 10;
@@ -557,7 +575,7 @@ function startGame() {
   if (available.length === 0) { showNotif('All questions used in the last 24h — add more or click Reset usage', 'error'); return; }
   if (available.length < count) showNotif(`Only ${available.length} unused questions available — using all of them`, 'error');
   const shuffled = [...available].sort(() => Math.random() - 0.5);
-  questions = shuffled.slice(0, Math.min(count, available.length)).map(q => {
+  const selected = shuffled.slice(0, Math.min(count, available.length)).map(q => {
     const opts = [...q.options];
     const correctText = opts[q.correct];
     for (let i = opts.length - 1; i > 0; i--) {
@@ -566,6 +584,7 @@ function startGame() {
     }
     return { ...q, options: opts, correct: opts.indexOf(correctText) };
   });
+  questions = spreadByCategory(selected);
 
   // Mark selected questions as used
   const now = Date.now();
