@@ -572,7 +572,9 @@ function startGame() {
   const newUsed = { ...usedQuestions };
   for (const q of questions) newUsed[hashQuestion(q)] = now;
   db.ref('usedQuestions').set(newUsed);
+  maxTime = parseInt(document.getElementById('time-setting').value) || 30;
   gameState.status = 'active'; gameState.currentQ = 0; gameState.revealed = false; gameState.scores = {};
+  gameState.timeLeft = maxTime;
   for (const pid of Object.keys(players)) players[pid].score = 0;
   responses = {};
   db.ref('questions').set(questions);
@@ -631,7 +633,8 @@ function nextQuestion() {
   if (gameState.currentQ >= questions.length - 1) {
     gameState.status = 'gameover'; db.ref('gameState').set(gameState); updateUI(); return;
   }
-  gameState.currentQ++; gameState.revealed = false; responses = {};
+  maxTime = parseInt(document.getElementById('time-setting').value) || 30;
+  gameState.currentQ++; gameState.revealed = false; gameState.timeLeft = maxTime; responses = {};
   db.ref('responses').remove(); db.ref('gameState').set(gameState);
   document.getElementById('stat-answered').textContent = 0;
   document.getElementById('stat-correct').textContent = 0;
