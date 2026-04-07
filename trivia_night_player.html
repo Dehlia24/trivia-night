@@ -103,53 +103,56 @@
 
   /* ── Monster sidebar ── */
   .monster-sidebar {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
     flex-shrink: 0; width: 160px; padding-top: 28px; position: relative;
   }
   .monster-svg {
-    animation: monster-float 3s ease-in-out infinite;
-    filter: drop-shadow(0 6px 18px rgba(46,204,113,0.25));
-    overflow: visible;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    animation: monster-float 2.4s steps(4, end) infinite;
+    filter: drop-shadow(0 6px 0 rgba(0,61,21,0.7));
   }
   @keyframes monster-float {
-    0%,100% { transform: translateY(0); }
-    50%      { transform: translateY(-8px); }
+    0%,100% { transform: translateY(0px); }
+    25%     { transform: translateY(-6px); }
+    50%     { transform: translateY(-8px); }
+    75%     { transform: translateY(-4px); }
   }
   @keyframes monster-nom {
-    0%   { transform: translateY(0)   scale(1)    rotate(0deg); }
-    20%  { transform: translateY(-7px) scale(1.06) rotate(-4deg); }
-    45%  { transform: translateY(-11px) scale(1.09) rotate(4deg); }
-    70%  { transform: translateY(-5px) scale(1.03) rotate(-1deg); }
-    100% { transform: translateY(0)   scale(1)    rotate(0deg); }
+    0%   { transform: translateY(0px); }
+    20%  { transform: translateY(-10px); }
+    40%  { transform: translateY(-12px); }
+    60%  { transform: translateY(-6px); }
+    80%  { transform: translateY(-2px); }
+    100% { transform: translateY(0px); }
   }
-  .monster-svg.eating { animation: monster-nom 0.5s ease forwards; }
-  .monster-svg.eating .mouth-smile { display: none; }
-  .monster-svg.eating .mouth-nom   { display: block !important; }
-  .monster-svg.eating #lpupil { transform: translate(2px, 5px); }
-  .monster-svg.eating #rpupil { transform: translate(-2px, 5px); }
+  .monster-svg.eating { animation: monster-nom 0.4s steps(5, end) forwards; }
+  .monster-svg.eating .mouth-normal { display: none; }
+  .monster-svg.eating .mouth-nom    { display: inline; }
   .snack-counter {
-    font-family: var(--font-head); font-size: 13px; font-weight: 700;
-    color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 99px; padding: 3px 14px;
+    font-family: var(--font-head); font-size: 12px; font-weight: 800;
+    color: #00d455; background: #001a09; border: 2px solid #003d15;
+    padding: 3px 12px; letter-spacing: 1px; text-transform: uppercase;
+    image-rendering: pixelated;
   }
   .feed-btn {
-    background: rgba(46,204,113,0.12); border: 1.5px solid rgba(46,204,113,0.35);
-    color: #2ecc71; font-family: var(--font-head); font-size: 14px; font-weight: 700;
-    padding: 9px 20px; border-radius: 99px; cursor: pointer; transition: all 0.15s;
+    background: #00882d; border: none; color: #ccffdd;
+    font-family: var(--font-head); font-size: 12px; font-weight: 800;
+    padding: 8px 16px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+    box-shadow: 0 4px 0 #003d15, inset 0 2px 0 rgba(255,255,255,0.2);
+    transition: none; image-rendering: pixelated;
   }
-  .feed-btn:hover  { background: rgba(46,204,113,0.24); transform: scale(1.06); }
-  .feed-btn:active { transform: scale(0.95); }
-  .monster-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
+  .feed-btn:hover  { background: #00aa38; }
+  .feed-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #003d15, inset 0 2px 0 rgba(255,255,255,0.2); }
+  .monster-label { font-size: 10px; color: #00882d; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
   .pellet {
-    position: absolute; width: 11px; height: 11px; border-radius: 50%;
-    background: var(--accent); left: 50%; bottom: 58px;
-    transform: translateX(-50%); pointer-events: none;
-    animation: pellet-rise 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+    position: absolute; width: 8px; height: 8px; border-radius: 0;
+    background: #00ff66; pointer-events: none; image-rendering: pixelated;
+    animation: pellet-fly 0.38s linear forwards;
   }
-  @keyframes pellet-rise {
-    0%   { transform: translateX(-50%) translateY(0)     scale(1);   opacity: 1; }
-    65%  { opacity: 1; }
-    100% { transform: translateX(-50%) translateY(-160px) scale(0.3); opacity: 0; }
+  @keyframes pellet-fly {
+    0%   { transform: translate(var(--x0), var(--y0)); opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translate(var(--x1), var(--y1)); opacity: 0; }
   }
   @media (max-width: 720px) {
     .game-wrapper { flex-direction: column; align-items: center; }
@@ -159,7 +162,7 @@
       border: 1px solid var(--border); border-radius: 18px;
       justify-content: center; gap: 20px;
     }
-    .monster-svg { width: 90px; height: 98px; }
+    .monster-svg { width: 96px; height: 96px; }
   }
 </style>
 </head>
@@ -249,40 +252,94 @@
 
 <!-- ── Monster sidebar ──────────────────────────────────────────────────── -->
 <div class="monster-sidebar">
-  <svg class="monster-svg" viewBox="0 38 140 120" xmlns="http://www.w3.org/2000/svg" width="140" height="120">
-    <!-- Body -->
-    <ellipse cx="70" cy="122" rx="37" ry="30" fill="#27ae60"/>
-    <!-- Head -->
-    <circle cx="70" cy="80" r="40" fill="#2ecc71"/>
-    <!-- Head sheen -->
-    <ellipse cx="56" cy="63" rx="9" ry="5" fill="rgba(255,255,255,0.2)" transform="rotate(-22 56 63)"/>
-    <!-- Left arm -->
-    <ellipse cx="29" cy="112" rx="9" ry="17" fill="#27ae60" transform="rotate(22 29 112)"/>
-    <circle cx="23" cy="127" r="8" fill="#2ecc71"/>
-    <!-- Right arm -->
-    <ellipse cx="111" cy="112" rx="9" ry="17" fill="#27ae60" transform="rotate(-22 111 112)"/>
-    <circle cx="117" cy="127" r="8" fill="#2ecc71"/>
-    <!-- Left eye -->
-    <circle cx="54" cy="76" r="13" fill="white"/>
-    <circle id="lpupil" cx="57" cy="79" r="7" fill="#111"/>
-    <circle cx="60" cy="74" r="2.5" fill="white"/>
-    <!-- Right eye -->
-    <circle cx="86" cy="76" r="13" fill="white"/>
-    <circle id="rpupil" cx="83" cy="79" r="7" fill="#111"/>
-    <circle cx="88" cy="72" r="2.5" fill="white"/>
-    <!-- Smile (normal) -->
-    <path class="mouth-smile" d="M 54 96 Q 70 108 86 96" fill="none" stroke="#1a6e3c" stroke-width="3.5" stroke-linecap="round"/>
-    <!-- Open mouth (nom) -->
-    <g class="mouth-nom" style="display:none">
-      <ellipse cx="70" cy="99" rx="14" ry="11" fill="#111"/>
-      <ellipse cx="70" cy="91" rx="14" ry="5" fill="#2ecc71"/>
-      <ellipse cx="70" cy="104" rx="8" ry="5" fill="#e74c3c"/>
-      <rect x="60" y="90" width="8" height="5" rx="2" fill="white"/>
-      <rect x="72" y="90" width="8" height="5" rx="2" fill="white"/>
+  <!-- 12×12 pixel-art monster, 8px/cell, 96×96 viewBox displayed at 120×120 -->
+  <svg class="monster-svg" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+    <!-- Row 0: top outline -->
+    <rect x="16" y="0"  width="64" height="8" fill="#003d15"/>
+    <!-- Row 1 -->
+    <rect x="8"  y="8"  width="8"  height="8" fill="#003d15"/>
+    <rect x="16" y="8"  width="16" height="8" fill="#00d455"/>
+    <rect x="32" y="8"  width="16" height="8" fill="#66ffaa"/>
+    <rect x="48" y="8"  width="32" height="8" fill="#00d455"/>
+    <rect x="80" y="8"  width="8"  height="8" fill="#003d15"/>
+    <!-- Row 2 -->
+    <rect x="0"  y="16" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="16" width="16" height="8" fill="#00d455"/>
+    <rect x="24" y="16" width="16" height="8" fill="#66ffaa"/>
+    <rect x="40" y="16" width="48" height="8" fill="#00d455"/>
+    <rect x="88" y="16" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 3: eyes (top half) -->
+    <rect x="0"  y="24" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="24" width="8"  height="8" fill="#00d455"/>
+    <rect x="16" y="24" width="16" height="8" fill="#ffffff"/>
+    <rect x="32" y="24" width="32" height="8" fill="#00d455"/>
+    <rect x="64" y="24" width="16" height="8" fill="#ffffff"/>
+    <rect x="80" y="24" width="8"  height="8" fill="#00d455"/>
+    <rect x="88" y="24" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 4: eyes (pupils) -->
+    <rect x="0"  y="32" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="32" width="8"  height="8" fill="#00d455"/>
+    <rect x="16" y="32" width="8"  height="8" fill="#ffffff"/>
+    <rect x="24" y="32" width="8"  height="8" fill="#111111"/>
+    <rect x="32" y="32" width="32" height="8" fill="#00d455"/>
+    <rect x="64" y="32" width="8"  height="8" fill="#ffffff"/>
+    <rect x="72" y="32" width="8"  height="8" fill="#111111"/>
+    <rect x="80" y="32" width="8"  height="8" fill="#00d455"/>
+    <rect x="88" y="32" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 5: cheeks -->
+    <rect x="0"  y="40" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="40" width="80" height="8" fill="#00d455"/>
+    <rect x="88" y="40" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 6: mouth-corners -->
+    <rect x="0"  y="48" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="48" width="16" height="8" fill="#00d455"/>
+    <rect x="24" y="48" width="16" height="8" fill="#003d15"/>
+    <rect x="40" y="48" width="16" height="8" fill="#00d455"/>
+    <rect x="56" y="48" width="16" height="8" fill="#003d15"/>
+    <rect x="72" y="48" width="16" height="8" fill="#00d455"/>
+    <rect x="88" y="48" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 7: mouth (normal — teeth) -->
+    <g class="mouth-normal">
+      <rect x="0"  y="56" width="8"  height="8" fill="#003d15"/>
+      <rect x="8"  y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="16" y="56" width="8"  height="8" fill="#000000"/>
+      <rect x="24" y="56" width="16" height="8" fill="#ffffff"/>
+      <rect x="40" y="56" width="16" height="8" fill="#000000"/>
+      <rect x="56" y="56" width="16" height="8" fill="#ffffff"/>
+      <rect x="72" y="56" width="8"  height="8" fill="#000000"/>
+      <rect x="80" y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="88" y="56" width="8"  height="8" fill="#003d15"/>
     </g>
-    <!-- Feet -->
-    <ellipse cx="56" cy="150" rx="12" ry="6" fill="#27ae60"/>
-    <ellipse cx="84" cy="150" rx="12" ry="6" fill="#27ae60"/>
+    <!-- Row 7: mouth (nom — open) -->
+    <g class="mouth-nom" style="display:none">
+      <rect x="0"  y="56" width="8"  height="8" fill="#003d15"/>
+      <rect x="8"  y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="16" y="56" width="64" height="8" fill="#000000"/>
+      <rect x="80" y="56" width="8"  height="8" fill="#00d455"/>
+      <rect x="88" y="56" width="8"  height="8" fill="#003d15"/>
+    </g>
+    <!-- Row 8: chin outline -->
+    <rect x="0"  y="64" width="8"  height="8" fill="#003d15"/>
+    <rect x="8"  y="64" width="8"  height="8" fill="#00d455"/>
+    <rect x="16" y="64" width="64" height="8" fill="#003d15"/>
+    <rect x="80" y="64" width="8"  height="8" fill="#00d455"/>
+    <rect x="88" y="64" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 9: body -->
+    <rect x="8"  y="72" width="8"  height="8" fill="#003d15"/>
+    <rect x="16" y="72" width="64" height="8" fill="#00d455"/>
+    <rect x="80" y="72" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 10: feet -->
+    <rect x="16" y="80" width="8"  height="8" fill="#003d15"/>
+    <rect x="24" y="80" width="8"  height="8" fill="#00d455"/>
+    <rect x="32" y="80" width="8"  height="8" fill="#003d15"/>
+    <rect x="56" y="80" width="8"  height="8" fill="#003d15"/>
+    <rect x="64" y="80" width="8"  height="8" fill="#00d455"/>
+    <rect x="72" y="80" width="8"  height="8" fill="#003d15"/>
+    <!-- Row 11: feet base -->
+    <rect x="16" y="88" width="16" height="8" fill="#003d15"/>
+    <rect x="56" y="88" width="16" height="8" fill="#003d15"/>
+    <!-- Invisible mouth target for pellet homing -->
+    <rect id="mouth-target" x="16" y="52" width="64" height="12" fill="transparent"/>
   </svg>
   <div class="snack-counter">🍪 <span id="snack-count">0</span></div>
   <button class="feed-btn" onclick="feedMonster()">Feed me!</button>
@@ -567,20 +624,39 @@ function feedMonster() {
   snackCount++;
   document.getElementById('snack-count').textContent = snackCount;
 
-  // Launch a pellet from the button up toward the monster
+  const sidebar  = document.querySelector('.monster-sidebar');
+  const btn      = document.querySelector('.feed-btn');
+  const mouth    = document.getElementById('mouth-target');
+  const sRect    = sidebar.getBoundingClientRect();
+  const bRect    = btn.getBoundingClientRect();
+  const mRect    = mouth.getBoundingClientRect();
+
+  // Start at button centre, end at mouth centre (both relative to sidebar)
+  const x0 = bRect.left  + bRect.width  / 2 - sRect.left;
+  const y0 = bRect.top   + bRect.height / 2 - sRect.top;
+  const x1 = mRect.left  + mRect.width  / 2 - sRect.left;
+  const y1 = mRect.top   + mRect.height / 2 - sRect.top;
+
   const pellet = document.createElement('div');
   pellet.className = 'pellet';
-  document.querySelector('.monster-sidebar').appendChild(pellet);
+  // Position at origin (0,0) of sidebar; translate via CSS vars
+  pellet.style.left = '0';
+  pellet.style.top  = '0';
+  pellet.style.setProperty('--x0', x0 + 'px');
+  pellet.style.setProperty('--y0', y0 + 'px');
+  pellet.style.setProperty('--x1', x1 + 'px');
+  pellet.style.setProperty('--y1', y1 + 'px');
+  sidebar.appendChild(pellet);
   pellet.addEventListener('animationend', () => pellet.remove());
 
-  // Trigger nom when pellet arrives (~0.4s into 0.55s flight)
+  // Trigger nom just before pellet lands
   setTimeout(() => {
     const svg = document.querySelector('.monster-svg');
     svg.classList.remove('eating');
-    void svg.offsetWidth; // force reflow so animation restarts
+    void svg.offsetWidth;
     svg.classList.add('eating');
-    setTimeout(() => svg.classList.remove('eating'), 520);
-  }, 380);
+    setTimeout(() => svg.classList.remove('eating'), 420);
+  }, 300);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
