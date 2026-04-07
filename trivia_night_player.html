@@ -128,8 +128,6 @@
     100% { transform: translateY(0px); }
   }
   .monster-svg.eating { animation: monster-nom 0.4s steps(5, end) forwards; }
-  .monster-svg.eating .mouth-normal { display: none; }
-  .monster-svg.eating .mouth-nom    { display: inline; }
   .snack-counter {
     font-family: var(--font-head); font-size: 12px; font-weight: 800;
     color: var(--accent); background: rgba(224,36,36,0.08); border: 2px solid rgba(224,36,36,0.4);
@@ -339,38 +337,36 @@
     <rect x="30" y="54" width="48" height="6" fill="#55bbff"/>
     <rect x="78" y="54" width="6"  height="6" fill="#1a88cc"/>
     <rect x="84" y="54" width="6"  height="6" fill="#003d7a"/>
-    <!-- Rows 10-11: mouth normal (ω smile) -->
+    <!-- Rows 10-11: mouth normal (U smile: corners x=36/x=72, arc x=42-x=60) -->
     <g class="mouth-normal">
       <rect x="18" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="60" width="6"  height="6" fill="#1a88cc"/>
-      <rect x="30" y="60" width="6"  height="6" fill="#55bbff"/>
+      <rect x="24" y="60" width="12" height="6" fill="#55bbff"/>
       <rect x="36" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="42" y="60" width="24" height="6" fill="#55bbff"/>
-      <rect x="66" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="72" y="60" width="6"  height="6" fill="#55bbff"/>
-      <rect x="78" y="60" width="6"  height="6" fill="#1a88cc"/>
+      <rect x="42" y="60" width="30" height="6" fill="#55bbff"/>
+      <rect x="72" y="60" width="6"  height="6" fill="#003d7a"/>
+      <rect x="78" y="60" width="6"  height="6" fill="#55bbff"/>
       <rect x="84" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="18" y="66" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="66" width="18" height="6" fill="#1a88cc"/>
+      <rect x="24" y="66" width="18" height="6" fill="#55bbff"/>
       <rect x="42" y="66" width="24" height="6" fill="#003d7a"/>
-      <rect x="66" y="66" width="18" height="6" fill="#1a88cc"/>
+      <rect x="66" y="66" width="18" height="6" fill="#55bbff"/>
       <rect x="84" y="66" width="6"  height="6" fill="#003d7a"/>
     </g>
-    <!-- Rows 10-11: mouth nom (wide open) -->
+    <!-- Rows 10-11: mouth nom (rectangular open: bracket at x=36/x=72, black x=42-x=66) -->
     <g class="mouth-nom" style="display:none">
       <rect x="18" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="60" width="6"  height="6" fill="#1a88cc"/>
-      <rect x="30" y="60" width="6"  height="6" fill="#55bbff"/>
+      <rect x="24" y="60" width="12" height="6" fill="#55bbff"/>
       <rect x="36" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="42" y="60" width="24" height="6" fill="#000000"/>
-      <rect x="66" y="60" width="6"  height="6" fill="#003d7a"/>
-      <rect x="72" y="60" width="6"  height="6" fill="#55bbff"/>
-      <rect x="78" y="60" width="6"  height="6" fill="#1a88cc"/>
+      <rect x="42" y="60" width="30" height="6" fill="#000000"/>
+      <rect x="72" y="60" width="6"  height="6" fill="#003d7a"/>
+      <rect x="78" y="60" width="6"  height="6" fill="#55bbff"/>
       <rect x="84" y="60" width="6"  height="6" fill="#003d7a"/>
       <rect x="18" y="66" width="6"  height="6" fill="#003d7a"/>
-      <rect x="24" y="66" width="18" height="6" fill="#1a88cc"/>
-      <rect x="42" y="66" width="24" height="6" fill="#000000"/>
-      <rect x="66" y="66" width="18" height="6" fill="#1a88cc"/>
+      <rect x="24" y="66" width="12" height="6" fill="#55bbff"/>
+      <rect x="36" y="66" width="6"  height="6" fill="#003d7a"/>
+      <rect x="42" y="66" width="30" height="6" fill="#000000"/>
+      <rect x="72" y="66" width="6"  height="6" fill="#003d7a"/>
+      <rect x="78" y="66" width="6"  height="6" fill="#55bbff"/>
       <rect x="84" y="66" width="6"  height="6" fill="#003d7a"/>
     </g>
     <!-- Row 12: chin, shadow on sides -->
@@ -704,13 +700,24 @@ function feedMonster() {
   sidebar.appendChild(pellet);
   pellet.addEventListener('animationend', () => pellet.remove());
 
-  // Trigger nom just before pellet lands
+  // Trigger open/close mouth cycle when pellet lands
   setTimeout(() => {
-    const svg = document.querySelector('.monster-svg');
-    svg.classList.remove('eating');
-    void svg.offsetWidth;
-    svg.classList.add('eating');
-    setTimeout(() => svg.classList.remove('eating'), 420);
+    const svg     = document.querySelector('.monster-svg');
+    const mNormal = svg.querySelector('.mouth-normal');
+    const mNom    = svg.querySelector('.mouth-nom');
+    svg.classList.remove('eating'); void svg.offsetWidth; svg.classList.add('eating');
+    // open → close → open → close cycle (140ms per frame)
+    [true, false, true, false].forEach((open, i) => {
+      setTimeout(() => {
+        mNormal.style.display = open ? 'none' : '';
+        mNom.style.display    = open ? 'inline' : 'none';
+      }, i * 140);
+    });
+    setTimeout(() => {
+      svg.classList.remove('eating');
+      mNormal.style.display = '';
+      mNom.style.display    = 'none';
+    }, 4 * 140);
   }, 300);
 }
 
