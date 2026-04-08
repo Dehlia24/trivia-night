@@ -125,7 +125,11 @@
   .resp-row.correct-ans .ans { color: var(--green); }
   .resp-row.wrong-ans .ans { color: var(--red); }
 
-  .q-editor { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .q-editor { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: border-color 0.15s; }
+  .q-editor.pinned { border-color: rgba(247,194,106,0.55); background: rgba(247,194,106,0.03); }
+  .pin-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; padding: 2px 8px; transition: all 0.15s; font-family: var(--font-body); }
+  .pin-btn:hover { border-color: rgba(247,194,106,0.5); color: #f7c26a; }
+  .pin-btn.active { color: #f7c26a; border-color: rgba(247,194,106,0.55); background: rgba(247,194,106,0.1); }
   .q-editor label { font-size: 12px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 6px; }
   .q-editor input, .q-editor select, .q-editor textarea {
     width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px;
@@ -329,6 +333,7 @@
           <div style="font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Question Bank — <span id="bank-count">0</span> questions</div>
           <div style="display:flex;gap:6px;">
             <button class="btn btn-secondary" onclick="resetUsage()" style="font-size:12px;padding:6px 12px;">Reset usage</button>
+            <button class="btn btn-secondary" onclick="clearPins()" style="font-size:12px;padding:6px 12px;">Clear pins</button>
             <button class="btn btn-secondary" onclick="clearBank()" style="font-size:12px;padding:6px 12px;">Clear all</button>
           </div>
         </div>
@@ -395,6 +400,7 @@ let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning:
 let questions = [];       // active game questions (random sample chosen at start)
 let questionBank = [];    // full pool stored in /questionBank
 let usedQuestions = {};   // { fingerprint: timestamp } — persisted in /usedQuestions
+let pinnedQuestions = {}; // { fingerprint: true } — guaranteed in next game
 let responses = {};
 let players = {};
 let timerInterval = null;
@@ -421,14 +427,14 @@ function showNotif(msg, type='success') {
 function saveSetting(key, value) { db.ref('settings/' + key).set(Number(value)); }
 
 function updateBankCount() {
+  const pinnedCount = questionBank.filter(q => pinnedQuestions[hashQuestion(q)]).length;
   const available = questionBank.filter(q => !usedQuestions[hashQuestion(q)]).length;
   const used = questionBank.length - available;
   const el = document.getElementById('bank-count');
-  el.textContent = questionBank.length === 0
-    ? '0 questions'
-    : used > 0
-      ? `${questionBank.length} questions — ${available} available, ${used} used in last 24h`
-      : `${questionBank.length} questions`;
+  let text = questionBank.length === 0 ? '0 questions' : `${questionBank.length} questions`;
+  if (used > 0) text += ` — ${available} available, ${used} used in last 24h`;
+  if (pinnedCount > 0) text += ` — ${pinnedCount} pinned`;
+  el.textContent = text;
 }
 
 function switchTab(tab) {
@@ -488,6 +494,12 @@ async function init() {
     const now = Date.now();
     const raw = snap.val() || {};
     usedQuestions = Object.fromEntries(Object.entries(raw).filter(([, ts]) => ts > now - DAY_MS));
+    updateBankCount();
+  });
+
+  // ── Pinned questions (guaranteed inclusion in next game) ──────────────────────
+  db.ref('pinnedQuestions').on('value', snap => {
+    pinnedQuestions = snap.val() || {};
     updateBankCount();
   });
 
@@ -578,11 +590,19 @@ function spreadByCategory(qs) {
 function startGame() {
   if (questionBank.length === 0) { showNotif('Add questions to the bank first!', 'error'); return; }
   const count = parseInt(document.getElementById('count-setting').value) || 10;
-  const available = questionBank.filter(q => !usedQuestions[hashQuestion(q)]);
-  if (available.length === 0) { showNotif('All questions used in the last 24h — add more or click Reset usage', 'error'); return; }
-  if (available.length < count) showNotif(`Only ${available.length} unused questions available — using all of them`, 'error');
-  const shuffled = [...available].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, Math.min(count, available.length)).map(q => {
+
+  // Pinned questions are always included regardless of used status
+  const pinned = questionBank.filter(q => pinnedQuestions[hashQuestion(q)]);
+  const pinnedToUse = pinned.slice(0, count);
+  const remaining = count - pinnedToUse.length;
+
+  // Fill remaining slots from unused, unpinned questions
+  const filler = questionBank.filter(q => !pinnedQuestions[hashQuestion(q)] && !usedQuestions[hashQuestion(q)]);
+  if (pinnedToUse.length === 0 && filler.length === 0) { showNotif('All questions used in the last 24h — add more or click Reset usage', 'error'); return; }
+  if (pinnedToUse.length + filler.length < count) showNotif(`Only ${pinnedToUse.length + filler.length} questions available — using all of them`, 'error');
+
+  const shuffledFiller = [...filler].sort(() => Math.random() - 0.5);
+  const selected = [...pinnedToUse, ...shuffledFiller.slice(0, remaining)].map(q => {
     const opts = [...q.options];
     const correctText = opts[q.correct];
     for (let i = opts.length - 1; i > 0; i--) {
@@ -756,10 +776,14 @@ function renderQuestionsEditor() {
   list.innerHTML = '';
   questionBank.forEach((q, qi) => {
     const div = document.createElement('div');
-    div.className = 'q-editor';
+    const isPinned = !!pinnedQuestions[hashQuestion(q)];
+    div.className = 'q-editor' + (isPinned ? ' pinned' : '');
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;">Q${qi+1}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;">Q${qi+1}</span>
+          <button class="pin-btn${isPinned ? ' active' : ''}" onclick="togglePin(${qi})" title="${isPinned ? 'Remove from guaranteed questions' : 'Guarantee this question in the next game'}">📌 ${isPinned ? 'Pinned' : 'Pin'}</button>
+        </div>
         <button onclick="removeQuestion(${qi})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;">Remove</button>
       </div>
       <label>Question</label>
@@ -783,7 +807,17 @@ function renderQuestionsEditor() {
 function updateQ(qi, field, val) { questionBank[qi][field] = val; db.ref('questionBank').set(questionBank); }
 function updateQOption(qi, oi, val) { questionBank[qi].options[oi] = val; db.ref('questionBank').set(questionBank); }
 function setCorrect(qi, oi) { questionBank[qi].correct = oi; db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
-function removeQuestion(qi) { questionBank.splice(qi, 1); db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
+function removeQuestion(qi) {
+  const hash = hashQuestion(questionBank[qi]);
+  if (pinnedQuestions[hash]) { delete pinnedQuestions[hash]; db.ref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null); }
+  questionBank.splice(qi, 1); db.ref('questionBank').set(questionBank); renderQuestionsEditor();
+}
+function togglePin(qi) {
+  const hash = hashQuestion(questionBank[qi]);
+  if (pinnedQuestions[hash]) { delete pinnedQuestions[hash]; } else { pinnedQuestions[hash] = true; }
+  db.ref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null);
+  renderQuestionsEditor(); updateBankCount();
+}
 function addBlankQuestion() {
   questionBank.unshift({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
   db.ref('questionBank').set(questionBank); renderQuestionsEditor();
@@ -799,6 +833,12 @@ function resetUsage() {
   usedQuestions = {};
   db.ref('usedQuestions').remove();
   showNotif('Question usage history cleared');
+}
+function clearPins() {
+  pinnedQuestions = {};
+  db.ref('pinnedQuestions').remove();
+  renderQuestionsEditor(); updateBankCount();
+  showNotif('All pins cleared');
 }
 
 async function generateQuestions() {
