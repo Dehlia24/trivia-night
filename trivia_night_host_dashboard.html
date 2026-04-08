@@ -785,7 +785,7 @@ function updateQOption(qi, oi, val) { questionBank[qi].options[oi] = val; db.ref
 function setCorrect(qi, oi) { questionBank[qi].correct = oi; db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
 function removeQuestion(qi) { questionBank.splice(qi, 1); db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
 function addBlankQuestion() {
-  questionBank.push({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
+  questionBank.unshift({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
   db.ref('questionBank').set(questionBank); renderQuestionsEditor();
 }
 function clearBank() {
