@@ -200,6 +200,13 @@
   html[data-theme="light"] .spinner { border-color: rgba(0,0,0,0.15); border-top-color: #111; }
   #theme-toggle { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 16px; padding: 4px 10px; cursor: pointer; line-height: 1; transition: border-color 0.2s; }
   #theme-toggle:hover { border-color: var(--accent); }
+  /* Fix select/option readability in Chrome dark OS mode */
+  select { color-scheme: dark; }
+  select option { background-color: #1f1f1f; color: #ffffff; }
+  html[data-theme="dim"] select { color-scheme: dark; }
+  html[data-theme="dim"] select option { background-color: #383838; color: #e8e8e8; }
+  html[data-theme="light"] select { color-scheme: light; }
+  html[data-theme="light"] select option { background-color: #ffffff; color: #111111; }
 </style>
 </head>
 <body>
