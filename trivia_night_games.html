@@ -154,6 +154,8 @@
     font-weight: 600; cursor: pointer; transition: background 0.15s;
   }
   .modal-confirm:hover { background: #b81c1c; }
+  .modal-confirm:disabled { background: rgba(255,255,255,0.1); color: var(--muted); cursor: default; }
+  .modal-error { font-size: 12px; color: var(--accent2); margin-top: 12px; display: none; }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
   .empty-state .big { font-size: 40px; margin-bottom: 14px; }
@@ -237,9 +239,10 @@
       This will permanently delete <span class="modal-game-name" id="modal-game-name"></span> and disconnect all players immediately. This cannot be undone.
     </div>
     <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="modal-confirm" onclick="confirmRemove()">Remove Session</button>
+      <button class="modal-cancel" id="modal-cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmRemove()">Remove Session</button>
     </div>
+    <p class="modal-error" id="modal-error"></p>
   </div>
 </div>
 
@@ -464,16 +467,30 @@ function promptRemove(code, name) {
 function closeModal() {
   pendingRemoveCode = null;
   document.getElementById('remove-modal').classList.remove('open');
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('modal-confirm-btn').disabled = false;
+  document.getElementById('modal-confirm-btn').textContent = 'Remove Session';
 }
 
 async function confirmRemove() {
   if (!pendingRemoveCode) return;
   const code = pendingRemoveCode;
-  closeModal();
+  const confirmBtn = document.getElementById('modal-confirm-btn');
+  const errorEl = document.getElementById('modal-error');
+
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Removing…';
+  errorEl.style.display = 'none';
+
   try {
     await db.ref('games/' + code).remove();
+    closeModal(); // only close on success
   } catch (err) {
-    alert('Failed to remove session: ' + err.message);
+    errorEl.textContent = 'Error: ' + err.message;
+    errorEl.style.display = 'block';
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Try Again';
+    console.error('Remove failed:', err);
   }
 }
 
