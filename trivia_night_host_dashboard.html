@@ -250,6 +250,30 @@
     div[style*="display:flex;gap:6px"] .btn { font-size: 11px; padding: 5px 9px; }
   }
 
+  /* ── Game name input ── */
+  .game-name-input {
+    width: 100%; background: none; border: none; border-bottom: 2px solid var(--border);
+    color: var(--text); font-family: var(--font-head); font-size: 20px; font-weight: 700;
+    padding: 8px 4px; outline: none; text-align: center; transition: border-color 0.2s; margin-bottom: 4px;
+  }
+  .game-name-input:focus { border-bottom-color: var(--accent2); }
+  .game-name-input::placeholder { color: var(--muted); font-weight: 400; font-size: 17px; }
+
+  /* ── QR + URL row ── */
+  .share-qr-row { display: flex; gap: 14px; align-items: flex-start; margin: 16px 0; text-align: left; }
+  .qr-box { background: #fff; border-radius: 10px; padding: 8px; flex-shrink: 0; line-height: 0; }
+  .qr-box img, .qr-box canvas { display: block; border-radius: 4px; }
+  @media (max-width: 480px) { .share-qr-row { flex-direction: column; align-items: center; } }
+
+  /* ── Player lobby ── */
+  .lobby-section { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 14px; text-align: left; }
+  .lobby-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .lobby-list { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
+  .lobby-player { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.04); font-size: 13px; }
+  .lobby-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 10px 0; }
+  .kick-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 2px 6px; border-radius: 4px; line-height: 1; transition: all 0.15s; }
+  .kick-btn:hover { color: var(--red); background: rgba(242,107,107,0.1); }
+
   /* ── Template bar ── */
   .tmpl-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
   .tmpl-bar-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
@@ -387,26 +411,42 @@
       <div class="view active" id="view-game">
         <div id="game-status-area">
           <div id="waiting-state">
-            <div style="text-align:center;padding:40px 20px;">
-              <div style="font-family:var(--font-head);font-size:28px;font-weight:800;margin-bottom:8px;">Ready to host?</div>
-              <div style="font-family:var(--font-head);font-size:48px;font-weight:800;letter-spacing:10px;color:var(--accent2);margin:12px 0 4px;" id="waiting-code"></div>
-              <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;">Game Code</div>
-              <div style="color:var(--muted);font-size:15px;margin-bottom:28px;">Share the code or link below and start when everyone's joined.</div>
-              <div class="share-box" style="text-align:left;">
-                <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Player Join Link</div>
-                <div class="share-url" id="join-url">Loading...</div>
-                <button class="copy-btn" onclick="copyLink()">Copy link</button>
+            <div style="padding:24px 8px 8px;">
+              <!-- Game name -->
+              <input class="game-name-input" id="game-name-input" type="text"
+                placeholder="Name your game (optional)..." maxlength="50"
+                oninput="scheduleNameUpdate()">
+              <!-- Code -->
+              <div style="text-align:center;margin:16px 0 4px;">
+                <div style="font-family:var(--font-head);font-size:44px;font-weight:800;letter-spacing:10px;color:var(--accent2);" id="waiting-code"></div>
+                <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px;">Game Code</div>
               </div>
-              <div class="players-joined" id="players-joined-count">0 players joined</div>
-              <div style="margin-top:16px;padding:12px 16px;border-radius:8px;background:rgba(247,194,106,0.12);border:1px solid rgba(247,194,106,0.35);font-size:13px;color:var(--text);text-align:left;max-width:420px;margin-left:auto;margin-right:auto;">
-                <span style="font-weight:700;color:#f7c26a;">&#9432; Player Limit: 100</span><br>
-                This game supports up to <strong>100 players</strong>. For larger-scale events, contact
-                <a href="mailto:ksweiker@redhat.com" style="color:#f7c26a;">ksweiker@redhat.com</a>
-                or <strong>@kswike</strong> on Slack.
+              <!-- QR + join link -->
+              <div class="share-qr-row">
+                <div class="qr-box"><div id="qr-container"></div></div>
+                <div class="share-box" style="flex:1;margin-bottom:0;">
+                  <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Player Join Link</div>
+                  <div class="share-url" id="join-url">Loading...</div>
+                  <button class="copy-btn" onclick="copyLink()">Copy link</button>
+                </div>
               </div>
-              <div style="margin-top:24px;display:flex;gap:10px;justify-content:center;">
+              <!-- Player lobby -->
+              <div class="lobby-section">
+                <div class="lobby-header">
+                  <span>Players Joined &mdash; <span id="players-joined-count">0</span> / 100</span>
+                  <button class="btn btn-secondary" onclick="clearPlayers()" style="font-size:11px;padding:4px 10px;">Clear all</button>
+                </div>
+                <div class="lobby-list" id="player-lobby"></div>
+                <div class="lobby-empty" id="lobby-empty">No players yet — share the code or link above</div>
+              </div>
+              <!-- Limit notice -->
+              <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(247,194,106,0.12);border:1px solid rgba(247,194,106,0.35);font-size:12px;color:var(--text);">
+                <span style="font-weight:700;color:#f7c26a;">&#9432; 100 player limit.</span>
+                For larger events contact <a href="mailto:ksweikert@gmail.com" style="color:#f7c26a;">ksweikert@gmail.com</a> or <strong>@kswike</strong> on Slack.
+              </div>
+              <!-- Start -->
+              <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
                 <button class="btn btn-primary" onclick="startGame()" style="font-size:16px;padding:14px 36px;" id="start-btn">Start Game</button>
-                <button class="btn btn-secondary" onclick="clearPlayers()">Clear Players</button>
               </div>
             </div>
           </div>
@@ -452,6 +492,7 @@
             </div>
             <div class="controls">
               <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+              <button class="btn btn-danger" onclick="endSession()">End Session</button>
             </div>
           </div>
         </div>
@@ -560,6 +601,7 @@
 
 <div class="notif" id="notif"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
@@ -650,7 +692,25 @@ async function init() {
   document.getElementById('game-code-pill').textContent = gameCode;
   document.getElementById('waiting-code').textContent = gameCode;
   const playerBase = location.origin + location.pathname.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
-  document.getElementById('join-url').textContent = playerBase + '?code=' + gameCode;
+  const playerUrl  = playerBase + '?code=' + gameCode;
+  document.getElementById('join-url').textContent = playerUrl;
+
+  // QR code
+  new QRCode(document.getElementById('qr-container'), {
+    text: playerUrl, width: 160, height: 160,
+    colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M
+  });
+
+  // Session metadata
+  gref('createdAt').get().then(s => { if (!s.val()) gref('createdAt').set(Date.now()); });
+  cleanupExpiredSessions();
+
+  // Game name sync
+  gref('name').on('value', snap => {
+    const name = snap.val() || '';
+    const input = document.getElementById('game-name-input');
+    if (input && document.activeElement !== input) input.value = name;
+  });
 
   const qSnap = await gref('questionBank').get();
   const savedQ = qSnap.val();
@@ -713,8 +773,10 @@ async function init() {
   // ── Players & responses ───────────────────────────────────────────────────────
   gref('players').on('value', snap => {
     players = snap.val() || {};
-    document.getElementById('stat-players').textContent = Object.keys(players).length;
-    document.getElementById('players-joined-count').textContent = Object.keys(players).length + ' players joined';
+    const count = Object.keys(players).length;
+    document.getElementById('stat-players').textContent = count;
+    document.getElementById('players-joined-count').textContent = count;
+    renderPlayerLobby();
     updateLeaderboard();
   });
 
@@ -884,7 +946,10 @@ function revealAnswer() {
 
 function nextQuestion() {
   if (gameState.currentQ >= questions.length - 1) {
-    gameState.status = 'gameover'; gref('gameState').set(gameState); updateUI(); return;
+    gameState.status = 'gameover';
+    gref('gameState').set(gameState);
+    gref('endedAt').set(Date.now());
+    updateUI(); return;
   }
   maxTime = parseInt(document.getElementById('time-setting').value) || 30;
   gameState.currentQ++; gameState.revealed = false; gameState.timeLeft = maxTime; responses = {};
@@ -1078,6 +1143,59 @@ async function generateQuestions() {
   } catch(e) { showNotif('Fetch failed: ' + e.message, 'error'); }
   btn.disabled = false;
   btnText.textContent = '↓ Fetch Questions';
+}
+
+// ─── Game Name ────────────────────────────────────────────────────────────────
+let nameUpdateTimer = null;
+function scheduleNameUpdate() {
+  clearTimeout(nameUpdateTimer);
+  nameUpdateTimer = setTimeout(() => {
+    const name = document.getElementById('game-name-input').value.trim();
+    gref('name').set(name || null);
+  }, 600);
+}
+
+// ─── Player Lobby ─────────────────────────────────────────────────────────────
+function renderPlayerLobby() {
+  const lobby = document.getElementById('player-lobby');
+  const empty = document.getElementById('lobby-empty');
+  if (!lobby) return;
+  const entries = Object.entries(players);
+  empty.style.display = entries.length === 0 ? '' : 'none';
+  lobby.innerHTML = '';
+  entries.forEach(([pid, p]) => {
+    const row = document.createElement('div');
+    row.className = 'lobby-player';
+    row.innerHTML = `<span>${p.name || pid.slice(0,8)}</span><button class="kick-btn" onclick="kickPlayer('${pid}')" title="Remove player">✕</button>`;
+    lobby.appendChild(row);
+  });
+}
+
+async function kickPlayer(pid) {
+  await gref('players/' + pid).remove();
+  await gref('responses/' + pid).remove();
+  showNotif('Player removed');
+}
+
+// ─── Session Cleanup ──────────────────────────────────────────────────────────
+async function cleanupExpiredSessions() {
+  try {
+    const snap = await db.ref('games').get();
+    const games = snap.val() || {};
+    const cutoff = Date.now() - 4 * 60 * 60 * 1000;
+    for (const [code, game] of Object.entries(games)) {
+      if (game.endedAt && game.endedAt < cutoff) {
+        await db.ref('games/' + code).remove();
+      }
+    }
+  } catch (_) {}
+}
+
+async function endSession() {
+  if (!confirm('End this session? All game data for this session will be removed.')) return;
+  clearInterval(timerInterval);
+  await db.ref('games/' + gameCode).remove();
+  window.location.href = location.pathname; // new session, fresh code
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────
