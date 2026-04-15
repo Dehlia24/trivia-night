@@ -6,7 +6,7 @@ A real-time multiplayer trivia game hosted on GitHub Pages with Firebase Realtim
 
 **Host a game:** https://dehlia24.github.io/trivia-night/trivia_night_host_dashboard.html
 
-**Browse active games:** https://dehlia24.github.io/trivia-night/trivia_night_games.html *(admin only)*
+**Browse active games:** https://dehlia24.github.io/trivia-night/trivia_night_games.html *(admin only — restricted to @Dehlia24)*
 
 ---
 
@@ -26,7 +26,7 @@ In the **Question Bank** panel on the right:
 - Click **+ Add Question** to add questions (added to the top of the list)
 - Fill in the question, answer, category, and point value for each
 - Use the **📌 Pin** button to guarantee a question appears in the next game
-- Pinned questions show a gold border and always get included regardless of used status
+- Pinned questions show a gold border and are always included regardless of used status
 - Click **Clear pins** to unpin all
 
 ### 4. Use Templates (Optional)
@@ -68,14 +68,16 @@ When all questions are done the leaderboard is shown to all players. From the ga
 
 ## Session Manager (Admin)
 
-The [Session Manager](https://dehlia24.github.io/trivia-night/trivia_night_games.html) shows all active and recent games in real time. It is locked to the `Dehlia24` GitHub account.
+The [Session Manager](https://dehlia24.github.io/trivia-night/trivia_night_games.html) shows all active and recent games in real time.
 
-From here you can:
-- See all live, waiting, and recently ended sessions
+> **Access is currently restricted to [@Dehlia24](https://github.com/Dehlia24) only.** Sign-in is handled via GitHub OAuth — no password needed. Anyone else who attempts to sign in will see an Access Denied screen.
+
+From the Session Manager you can:
+- See all live, waiting, and recently ended sessions at a glance
 - Join any active session as a player
-- **Remove** a session immediately (with confirmation)
+- **Remove** a session immediately (with confirmation prompt) — useful for cleaning up stuck or test sessions
 
-Sessions automatically expire and are cleaned up 4 hours after ending.
+Sessions automatically expire and are removed 4 hours after ending.
 
 ---
 
@@ -93,13 +95,36 @@ Sessions automatically expire and are cleaned up 4 hours after ending.
 
 ## Firebase Setup (for forks)
 
-If you fork this repo, you'll need your own Firebase project:
+> **Note:** All three HTML files in this repo contain hardcoded Firebase config pointing to the original project (`trivia-127b9`). If you fork this repo, you **must** replace this config in all three files or your data will be mixed with the original project's data.
 
-1. Create a project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable **Realtime Database**
-3. Enable **GitHub** as an Authentication provider (Authentication → Sign-in method)
+### Steps
+
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Realtime Database** in your project
+3. Copy your project's config object (Project Settings → Your apps → SDK setup) — it looks like this:
+   ```js
+   const firebaseConfig = {
+     apiKey: "...",
+     authDomain: "...",
+     databaseURL: "...",
+     projectId: "...",
+     storageBucket: "...",
+     messagingSenderId: "...",
+     appId: "..."
+   };
+   ```
+4. Replace the `firebaseConfig` block in **all three files**:
+   - `trivia_night_host_dashboard.html`
+   - `trivia_night_player.html`
+   - `trivia_night_games.html`
+5. In `trivia_night_games.html`, update this line to your own GitHub username:
+   ```js
+   const ALLOWED_GITHUB_LOGIN = 'Dehlia24';
+   ```
+6. To enable GitHub login for the Session Manager:
    - Create a GitHub OAuth App at github.com/settings/developers
    - Set the callback URL to `https://<your-firebase-project>.firebaseapp.com/__/auth/handler`
-4. Add your GitHub Pages domain to Firebase **Authorized Domains** (Authentication → Settings)
-5. Replace the `firebaseConfig` object in all three HTML files with your own project's config
-6. Update `ALLOWED_GITHUB_LOGIN` in `trivia_night_games.html` to your GitHub username
+   - In Firebase Console → Authentication → Sign-in method → GitHub, enable it and paste your Client ID and Secret
+   - Add your GitHub Pages domain to Firebase → Authentication → Settings → Authorized Domains
+
+> **On Firebase API keys:** The `apiKey` in the client config is safe to commit to a public repo — this is by design for Firebase web apps. Security is enforced by Firebase Security Rules, not by keeping the key secret.
