@@ -612,6 +612,11 @@
           <button class="btn btn-primary" onclick="generateQuestions()" id="gen-btn">
             <span id="gen-btn-text">↓ Fetch Questions</span>
           </button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <label style="font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;">Amount</label>
+            <input id="otdb-amount" type="number" min="1" max="50" value="10"
+              style="width:60px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:7px 10px;outline:none;text-align:center;">
+          </div>
           <button class="btn btn-secondary" onclick="addBlankQuestion()">+ Add blank</button>
         </div>
         <div style="margin-bottom:16px;display:flex;gap:10px;align-items:flex-end;">
@@ -1201,7 +1206,8 @@ async function generateQuestions() {
 
   const category = document.getElementById('otdb-category').value;
   const difficulty = document.getElementById('otdb-difficulty').value;
-  let url = 'https://opentdb.com/api.php?amount=10&type=multiple';
+  const amount = Math.min(50, Math.max(1, parseInt(document.getElementById('otdb-amount').value) || 10));
+  let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
   if (category)   url += '&category='   + category;
   if (difficulty) url += '&difficulty=' + difficulty;
 
