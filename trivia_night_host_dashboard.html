@@ -281,13 +281,18 @@
   .tmpl-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
   .tmpl-bar-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .tmpl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .tmpl-select { flex: 1; min-width: 160px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px; outline: none; }
-  .tmpl-select:focus { border-color: var(--accent); }
-  .tmpl-search { width: 130px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px 0 0 8px; border-right: none; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 10px 8px 30px; outline: none; }
-  .tmpl-search:focus { border-color: var(--accent); z-index: 1; position: relative; }
-  .tmpl-search-wrap { position: relative; display: flex; flex: 1; min-width: 0; }
-  .tmpl-search-wrap::before { content: '🔍'; position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; pointer-events: none; z-index: 2; }
-  .tmpl-search-wrap .tmpl-select { border-radius: 0 8px 8px 0; flex: 1; min-width: 0; }
+  .tmpl-combo { position: relative; flex: 1; min-width: 160px; }
+  .tmpl-combo-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 28px 8px 12px; outline: none; cursor: pointer; }
+  .tmpl-combo-input:focus { border-color: var(--accent); }
+  .tmpl-combo-input.open { border-radius: 8px 8px 0 0; border-color: var(--accent); }
+  .tmpl-combo-arrow { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--muted); font-size: 11px; }
+  .tmpl-combo-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--accent); border-top: none; border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto; z-index: 100; }
+  .tmpl-combo-list.open { display: block; }
+  .tmpl-combo-option { padding: 8px 12px; font-size: 13px; color: var(--text); cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .tmpl-combo-option:last-child { border-bottom: none; }
+  .tmpl-combo-option:hover, .tmpl-combo-option.active { background: rgba(224,36,36,0.15); }
+  .tmpl-combo-option.selected { color: var(--accent2); font-weight: 600; }
+  .tmpl-combo-empty { padding: 10px 12px; font-size: 13px; color: var(--muted); font-style: italic; }
   .tmpl-info { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
   .tmpl-save-row { display: none; margin-top: 10px; gap: 8px; }
   .tmpl-save-row.open { display: flex; }
@@ -573,12 +578,14 @@
         <div class="tmpl-bar">
           <div class="tmpl-bar-title">Question Bank Templates</div>
           <div class="tmpl-row">
-            <div class="tmpl-search-wrap">
-              <input class="tmpl-search" id="tmpl-search" type="text" placeholder="Search…" maxlength="60"
-                oninput="populateTemplateDropdown()" onkeydown="if(event.key==='Escape'){this.value='';populateTemplateDropdown();}">
-              <select class="tmpl-select" id="template-select" onchange="onTemplateSelect()">
-                <option value="">— Select a template —</option>
-              </select>
+            <div class="tmpl-combo" id="tmpl-combo">
+              <input class="tmpl-combo-input" id="tmpl-search" type="text" placeholder="— Search or select a template —"
+                autocomplete="off" maxlength="80"
+                oninput="tmplComboFilter()"
+                onfocus="tmplComboOpen()"
+                onkeydown="tmplComboKey(event)">
+              <span class="tmpl-combo-arrow">▼</span>
+              <div class="tmpl-combo-list" id="tmpl-combo-list"></div>
             </div>
             <button class="btn btn-secondary" onclick="loadSelectedTemplate()" style="font-size:13px;padding:8px 14px;">Load</button>
             <button class="btn btn-success" onclick="openSaveTemplate()" style="font-size:13px;padding:8px 14px;">Save as template</button>
@@ -1302,36 +1309,124 @@ async function endSession() {
   window.location.href = location.pathname; // new session, fresh code
 }
 
-// ─── Templates ────────────────────────────────────────────────────────────────
-function populateTemplateDropdown() {
-  const sel = document.getElementById('template-select');
-  const current = sel.value;
+// ─── Templates combo box ──────────────────────────────────────────────────────
+let selectedTemplateKey = '';
+let tmplComboActiveIdx = -1;
+
+function tmplComboGetFiltered() {
   const filter = (document.getElementById('tmpl-search')?.value || '').toLowerCase().trim();
-  sel.innerHTML = '<option value="">— Select a template —</option>';
   const sorted = Object.entries(templates).sort(([,a],[,b]) => (b.savedAt||0) - (a.savedAt||0));
-  for (const [key, tmpl] of sorted) {
-    if (filter && !tmpl.name.toLowerCase().includes(filter)) continue;
-    const opt = document.createElement('option');
-    opt.value = key;
+  return filter ? sorted.filter(([, t]) => t.name.toLowerCase().includes(filter)) : sorted;
+}
+
+function tmplComboRenderList() {
+  const list = document.getElementById('tmpl-combo-list');
+  if (!list) return;
+  const filtered = tmplComboGetFiltered();
+  list.innerHTML = '';
+  tmplComboActiveIdx = -1;
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'tmpl-combo-empty';
+    empty.textContent = 'No templates match';
+    list.appendChild(empty);
+    return;
+  }
+  filtered.forEach(([key, tmpl], i) => {
     const qCount = Array.isArray(tmpl.questions) ? tmpl.questions.length : 0;
     const date = tmpl.savedAt ? new Date(tmpl.savedAt).toLocaleDateString() : '';
-    opt.textContent = `${tmpl.name}  (${qCount}q${date ? ' · ' + date : ''})`;
-    sel.appendChild(opt);
+    const item = document.createElement('div');
+    item.className = 'tmpl-combo-option' + (key === selectedTemplateKey ? ' selected' : '');
+    item.dataset.key = key;
+    item.textContent = `${tmpl.name}  (${qCount}q${date ? ' · ' + date : ''})`;
+    item.addEventListener('mousedown', e => { e.preventDefault(); tmplComboSelect(key); });
+    list.appendChild(item);
+  });
+}
+
+function tmplComboOpen() {
+  const input = document.getElementById('tmpl-search');
+  const list = document.getElementById('tmpl-combo-list');
+  if (!list) return;
+  // If a template is selected and input shows its name, clear for fresh search
+  if (selectedTemplateKey && input.value === (templates[selectedTemplateKey]?.name || '')) {
+    input.value = '';
   }
-  if (current && templates[current]) sel.value = current;
+  input.classList.add('open');
+  list.classList.add('open');
+  tmplComboRenderList();
+}
+
+function tmplComboClose() {
+  const input = document.getElementById('tmpl-search');
+  const list = document.getElementById('tmpl-combo-list');
+  input?.classList.remove('open');
+  list?.classList.remove('open');
+  // Restore selected name in input
+  input.value = selectedTemplateKey && templates[selectedTemplateKey] ? templates[selectedTemplateKey].name : '';
+}
+
+function tmplComboFilter() {
+  tmplComboRenderList();
+  const list = document.getElementById('tmpl-combo-list');
+  if (!list.classList.contains('open')) list.classList.add('open');
+}
+
+function tmplComboSelect(key) {
+  selectedTemplateKey = key;
+  tmplComboClose();
+  onTemplateSelect();
+}
+
+function tmplComboKey(e) {
+  const list = document.getElementById('tmpl-combo-list');
+  const items = list?.querySelectorAll('.tmpl-combo-option') || [];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    tmplComboActiveIdx = Math.min(tmplComboActiveIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    tmplComboActiveIdx = Math.max(tmplComboActiveIdx - 1, 0);
+  } else if (e.key === 'Enter' && tmplComboActiveIdx >= 0) {
+    e.preventDefault();
+    const key = items[tmplComboActiveIdx]?.dataset?.key;
+    if (key) tmplComboSelect(key);
+    return;
+  } else if (e.key === 'Escape') {
+    tmplComboClose();
+    return;
+  }
+  items.forEach((el, i) => el.classList.toggle('active', i === tmplComboActiveIdx));
+  if (items[tmplComboActiveIdx]) items[tmplComboActiveIdx].scrollIntoView({ block: 'nearest' });
+}
+
+// Close combo when clicking outside
+document.addEventListener('mousedown', e => {
+  if (!document.getElementById('tmpl-combo')?.contains(e.target)) tmplComboClose();
+});
+
+function populateTemplateDropdown() {
+  // Re-render list if open, otherwise just refresh the selection display
+  const list = document.getElementById('tmpl-combo-list');
+  if (list?.classList.contains('open')) tmplComboRenderList();
+  // If selected template no longer exists (e.g. deleted), clear selection
+  if (selectedTemplateKey && !templates[selectedTemplateKey]) {
+    selectedTemplateKey = '';
+    const input = document.getElementById('tmpl-search');
+    if (input && !list?.classList.contains('open')) input.value = '';
+  }
   onTemplateSelect();
 }
 
 function onTemplateSelect() {
-  const key = document.getElementById('template-select').value;
   const info = document.getElementById('tmpl-info');
   const delBtn = document.getElementById('tmpl-delete-btn');
-  if (!key || !templates[key]) {
+  if (!selectedTemplateKey || !templates[selectedTemplateKey]) {
     info.textContent = '';
     delBtn.style.display = 'none';
     return;
   }
-  const tmpl = templates[key];
+  const tmpl = templates[selectedTemplateKey];
   const qCount = Array.isArray(tmpl.questions) ? tmpl.questions.length : 0;
   const date = tmpl.savedAt ? new Date(tmpl.savedAt).toLocaleString() : 'unknown';
   info.textContent = `${qCount} question${qCount !== 1 ? 's' : ''} · Saved ${date}`;
@@ -1339,9 +1434,8 @@ function onTemplateSelect() {
 }
 
 async function loadSelectedTemplate() {
-  const key = document.getElementById('template-select').value;
-  if (!key || !templates[key]) { showNotif('Select a template first', 'error'); return; }
-  const tmpl = templates[key];
+  if (!selectedTemplateKey || !templates[selectedTemplateKey]) { showNotif('Select a template first', 'error'); return; }
+  const tmpl = templates[selectedTemplateKey];
   if (questionBank.length > 0 && !confirm(`Replace your current ${questionBank.length}-question bank with "${tmpl.name}"?`)) return;
   questionBank = Array.isArray(tmpl.questions) ? [...tmpl.questions] : Object.values(tmpl.questions);
   await gref('questionBank').set(questionBank);
@@ -1371,15 +1465,17 @@ async function confirmSaveTemplate() {
   closeSaveTemplate();
   showNotif(`Template "${name}" saved!`);
   // Auto-select the newly saved template
-  setTimeout(() => { document.getElementById('template-select').value = key; onTemplateSelect(); }, 300);
+  setTimeout(() => { selectedTemplateKey = key; tmplComboClose(); onTemplateSelect(); }, 300);
 }
 
 async function deleteSelectedTemplate() {
-  const key = document.getElementById('template-select').value;
-  if (!key || !templates[key]) return;
-  const name = templates[key].name;
+  if (!selectedTemplateKey || !templates[selectedTemplateKey]) return;
+  const name = templates[selectedTemplateKey].name;
   if (!confirm(`Delete template "${name}"? This cannot be undone.`)) return;
-  await db.ref('templates/' + key).remove();
+  await db.ref('templates/' + selectedTemplateKey).remove();
+  selectedTemplateKey = '';
+  const input = document.getElementById('tmpl-search');
+  if (input) input.value = '';
   showNotif(`Template "${name}" deleted`);
 }
 
