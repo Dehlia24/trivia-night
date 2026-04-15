@@ -271,8 +271,11 @@
   .lobby-list { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
   .lobby-player { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.04); font-size: 13px; }
   .lobby-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 10px 0; }
-  .kick-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 2px 6px; border-radius: 4px; line-height: 1; transition: all 0.15s; }
-  .kick-btn:hover { color: var(--red); background: rgba(242,107,107,0.1); }
+  .lobby-player-actions { display: flex; gap: 4px; }
+  .kick-btn { background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 600; font-family: var(--font-body); padding: 3px 8px; border-radius: 4px; line-height: 1; transition: all 0.15s; }
+  .kick-btn:hover { color: var(--accent2); border-color: rgba(255,82,82,0.4); background: rgba(242,107,107,0.1); }
+  .ban-btn { background: rgba(224,36,36,0.12); border: 1px solid rgba(224,36,36,0.35); color: var(--accent2); cursor: pointer; font-size: 11px; font-weight: 600; font-family: var(--font-body); padding: 3px 8px; border-radius: 4px; line-height: 1; transition: all 0.15s; }
+  .ban-btn:hover { background: rgba(224,36,36,0.25); border-color: rgba(224,36,36,0.7); }
 
   /* ── Template bar ── */
   .tmpl-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
@@ -1166,7 +1169,24 @@ function renderPlayerLobby() {
   entries.forEach(([pid, p]) => {
     const row = document.createElement('div');
     row.className = 'lobby-player';
-    row.innerHTML = `<span>${p.name || pid.slice(0,8)}</span><button class="kick-btn" onclick="kickPlayer('${pid}')" title="Remove player">✕</button>`;
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = p.name || pid.slice(0, 8);
+    const actions = document.createElement('div');
+    actions.className = 'lobby-player-actions';
+    const kickBtn = document.createElement('button');
+    kickBtn.className = 'kick-btn';
+    kickBtn.title = 'Kick — player can rejoin';
+    kickBtn.textContent = 'Kick';
+    kickBtn.addEventListener('click', () => kickPlayer(pid));
+    const banBtn = document.createElement('button');
+    banBtn.className = 'ban-btn';
+    banBtn.title = 'Ban — player cannot rejoin this session';
+    banBtn.textContent = 'Ban';
+    banBtn.addEventListener('click', () => banPlayer(pid, p.name || ''));
+    actions.appendChild(kickBtn);
+    actions.appendChild(banBtn);
+    row.appendChild(nameSpan);
+    row.appendChild(actions);
     lobby.appendChild(row);
   });
 }
@@ -1174,7 +1194,14 @@ function renderPlayerLobby() {
 async function kickPlayer(pid) {
   await gref('players/' + pid).remove();
   await gref('responses/' + pid).remove();
-  showNotif('Player removed');
+  showNotif('Player kicked — they can rejoin');
+}
+
+async function banPlayer(pid, name) {
+  await gref('bannedPlayers/' + pid).set({ name });
+  await gref('players/' + pid).remove();
+  await gref('responses/' + pid).remove();
+  showNotif('Player banned — they cannot rejoin this session');
 }
 
 // ─── Session Cleanup ──────────────────────────────────────────────────────────
