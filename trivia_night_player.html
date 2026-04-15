@@ -250,10 +250,18 @@
   <!-- KICKED SCREEN -->
   <div class="screen" id="screen-kicked">
     <div style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">👋</div>
+      <h2>You've been removed</h2>
+      <div class="sub">The host has removed you from this game. You're welcome to rejoin if you'd like.</div>
+      <button class="btn-join" onclick="location.reload()" style="margin-top:24px;">Rejoin game →</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-banned">
+    <div style="text-align:center;">
       <div style="font-size:48px;margin-bottom:16px;">🚫</div>
-      <h2>Removed from game</h2>
-      <div class="sub">The host has removed you from this game.</div>
-      <button class="btn-join" onclick="location.reload()" style="margin-top:24px;">Try joining again →</button>
+      <h2>You've been banned</h2>
+      <div class="sub">The host has banned you from this game session. You are unable to rejoin.</div>
     </div>
   </div>
 
@@ -591,7 +599,7 @@ async function joinGame() {
   const existing = snap.val() || {};
   if (Object.keys(existing).length >= 100) {
     document.getElementById('join-btn').disabled = false;
-    document.getElementById('name-error').textContent = 'This game is full (100 player limit). Contact ksweiker@redhat.com for larger events.';
+    document.getElementById('name-error').textContent = 'This game is full (100 player limit). Contact ksweikert@gmail.com for larger events.';
     return;
   }
   const taken = Object.values(existing).some(p => p.name?.toLowerCase() === name.toLowerCase());
@@ -599,6 +607,15 @@ async function joinGame() {
     document.getElementById('join-btn').disabled = false;
     document.getElementById('name-input').focus();
     document.getElementById('name-error').textContent = 'That name is already taken — choose another.';
+    return;
+  }
+  // Check if this name has been banned from this session
+  const bannedSnap = await gref('bannedPlayers').get();
+  const bannedList = bannedSnap.val() || {};
+  const isBanned = Object.values(bannedList).some(b => b.name?.toLowerCase() === name.toLowerCase());
+  if (isBanned) {
+    document.getElementById('join-btn').disabled = false;
+    document.getElementById('name-error').textContent = 'You have been banned from this game session.';
     return;
   }
   document.getElementById('name-error').textContent = '';
@@ -643,12 +660,13 @@ function attachGameListeners() {
     if (state) onGameStateChange(state);
   });
 
-  // Kick detection
-  gref('players/' + myId).on('value', snap => {
+  // Kick / ban detection
+  gref('players/' + myId).on('value', async snap => {
     if (myId && snap.val() === null && gameStatus !== 'gameover' && gameStatus !== 'waiting') {
       sessionStorage.removeItem('trivia_session');
       clearInterval(timerInterval);
-      showScreen('screen-kicked');
+      const bannedSnap = await gref('bannedPlayers/' + myId).get();
+      showScreen(bannedSnap.val() ? 'screen-banned' : 'screen-kicked');
     }
   });
 
@@ -916,6 +934,13 @@ async function checkRejoin() {
     if (!sess.myId || !sess.gameCode) return false;
     if (gameCode && sess.gameCode !== gameCode) return false;
     if (!gameCode) gameCode = sess.gameCode;
+    // Check if this player was banned
+    const bannedSnap = await gref('bannedPlayers/' + sess.myId).get();
+    if (bannedSnap.val()) {
+      sessionStorage.removeItem('trivia_session');
+      showScreen('screen-banned');
+      return 'banned';
+    }
     const stateSnap = await gref('gameState').get();
     const state = stateSnap.val();
     if (!state || state.status === 'gameover') return false;
@@ -953,6 +978,7 @@ function rejoinAsNew() {
 document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
 
 checkRejoin().then(canRejoin => {
+  if (canRejoin === 'banned') return; // banned screen already shown
   if (canRejoin) {
     document.getElementById('rejoin-name').textContent = savedSession.myName;
     document.getElementById('join-code-display').textContent = gameCode;
