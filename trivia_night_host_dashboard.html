@@ -328,6 +328,7 @@
     <div class="logo">Trivia<span>Night</span> <span style="color:var(--muted);font-size:13px;font-weight:400;">Host Dashboard</span></div>
     <div style="display:flex;align-items:center;gap:10px;">
       <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️</button>
+      <div id="game-code-pill" style="font-family:var(--font-head);font-size:13px;font-weight:800;letter-spacing:3px;padding:4px 12px;border-radius:6px;background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.25);color:var(--accent2);"></div>
       <div id="status-pill" class="status-pill">Setup</div>
     </div>
   </header>
@@ -375,8 +376,10 @@
         <div id="game-status-area">
           <div id="waiting-state">
             <div style="text-align:center;padding:40px 20px;">
-              <div style="font-family:var(--font-head);font-size:28px;font-weight:800;margin-bottom:12px;">Ready to host?</div>
-              <div style="color:var(--muted);font-size:15px;margin-bottom:28px;">Share the player link and start when everyone's joined.</div>
+              <div style="font-family:var(--font-head);font-size:28px;font-weight:800;margin-bottom:8px;">Ready to host?</div>
+              <div style="font-family:var(--font-head);font-size:48px;font-weight:800;letter-spacing:10px;color:var(--accent2);margin:12px 0 4px;" id="waiting-code"></div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;">Game Code</div>
+              <div style="color:var(--muted);font-size:15px;margin-bottom:28px;">Share the code or link below and start when everyone's joined.</div>
               <div class="share-box" style="text-align:left;">
                 <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Player Join Link</div>
                 <div class="share-url" id="join-url">Loading...</div>
@@ -541,6 +544,22 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// ─── Game code — namespaces this session under games/<code>/ in Firebase ───────
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function genCode() {
+  return Array.from({length: 6}, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+}
+const gameCode = (() => {
+  const params = new URLSearchParams(location.search);
+  let code = (params.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length < 4) code = genCode();
+  params.set('code', code);
+  history.replaceState({}, '', location.pathname + '?' + params.toString());
+  return code;
+})();
+// Shorthand for game-scoped Firebase refs
+function gref(path) { return db.ref('games/' + gameCode + '/' + path); }
+
 let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
 let questions = [];       // active game questions (random sample chosen at start)
 let questionBank = [];    // full pool stored in /questionBank
@@ -569,7 +588,7 @@ function showNotif(msg, type='success') {
   setTimeout(() => n.className = 'notif', 2800);
 }
 
-function saveSetting(key, value) { db.ref('settings/' + key).set(Number(value)); }
+function saveSetting(key, value) { gref('settings/' + key).set(Number(value)); }
 
 function updateBankCount() {
   const pinnedCount = questionBank.filter(q => pinnedQuestions[hashQuestion(q)]).length;
@@ -594,7 +613,10 @@ async function init() {
     return;
   }
 
-  document.getElementById('join-url').textContent = window.location.href.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
+  document.getElementById('game-code-pill').textContent = gameCode;
+  document.getElementById('waiting-code').textContent = gameCode;
+  const playerBase = location.origin + location.pathname.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
+  document.getElementById('join-url').textContent = playerBase + '?code=' + gameCode;
 
   const qSnap = await db.ref('questionBank').get();
   const savedQ = qSnap.val();
@@ -606,7 +628,7 @@ async function init() {
   }
 
   // ── Game state (syncs game controls across all open host dashboards) ──────────
-  db.ref('gameState').on('value', snap => {
+  gref('gameState').on('value', snap => {
     const state = snap.val();
     if (!state) return;
     gameState = { ...gameState, ...state };
@@ -614,13 +636,13 @@ async function init() {
   });
 
   // ── Active questions ──────────────────────────────────────────────────────────
-  db.ref('questions').on('value', snap => {
+  gref('questions').on('value', snap => {
     const qs = snap.val();
     if (qs) questions = Array.isArray(qs) ? qs : Object.values(qs);
   });
 
   // ── Settings (syncs timer/points/count across all open host dashboards) ───────
-  db.ref('settings').on('value', snap => {
+  gref('settings').on('value', snap => {
     const s = snap.val() || {};
     if (s.timePerQuestion   != null) document.getElementById('time-setting').value   = s.timePerQuestion;
     if (s.pointsPerQuestion != null) document.getElementById('points-setting').value = s.pointsPerQuestion;
@@ -649,14 +671,14 @@ async function init() {
   });
 
   // ── Players & responses ───────────────────────────────────────────────────────
-  db.ref('players').on('value', snap => {
+  gref('players').on('value', snap => {
     players = snap.val() || {};
     document.getElementById('stat-players').textContent = Object.keys(players).length;
     document.getElementById('players-joined-count').textContent = Object.keys(players).length + ' players joined';
     updateLeaderboard();
   });
 
-  db.ref('responses').on('value', snap => {
+  gref('responses').on('value', snap => {
     responses = snap.val() || {};
     updateResponses();
     updateLeaderboard();
@@ -768,10 +790,10 @@ function startGame() {
   gameState.timeLeft = maxTime;
   for (const pid of Object.keys(players)) players[pid].score = 0;
   responses = {};
-  db.ref('questions').set(questions);
-  db.ref('responses').remove();
-  db.ref('players').set(players);
-  db.ref('gameState').set(gameState);
+  gref('questions').set(questions);
+  gref('responses').remove();
+  gref('players').set(players);
+  gref('gameState').set(gameState);
   updateUI(); startTimer();
 }
 
@@ -814,19 +836,19 @@ function revealAnswer() {
       gameState.scores[pid] += pts;
     }
   }
-  db.ref('players').set(players);
-  db.ref('gameState').set(gameState);
+  gref('players').set(players);
+  gref('gameState').set(gameState);
   renderCurrentQuestion(); updateResponses(); updateLeaderboard();
   document.getElementById('stat-correct').textContent = Object.values(responses).filter(r => r['q'+gameState.currentQ] === q.correct).length;
 }
 
 function nextQuestion() {
   if (gameState.currentQ >= questions.length - 1) {
-    gameState.status = 'gameover'; db.ref('gameState').set(gameState); updateUI(); return;
+    gameState.status = 'gameover'; gref('gameState').set(gameState); updateUI(); return;
   }
   maxTime = parseInt(document.getElementById('time-setting').value) || 30;
   gameState.currentQ++; gameState.revealed = false; gameState.timeLeft = maxTime; responses = {};
-  db.ref('responses').remove(); db.ref('gameState').set(gameState);
+  gref('responses').remove(); gref('gameState').set(gameState);
   document.getElementById('stat-answered').textContent = 0;
   document.getElementById('stat-correct').textContent = 0;
   document.getElementById('resp-list').innerHTML = '';
@@ -884,8 +906,8 @@ function showWinner() {
 async function clearPlayers() {
   players = {};
   responses = {};
-  await db.ref('players').remove();
-  await db.ref('responses').remove();
+  await gref('players').remove();
+  await gref('responses').remove();
   showNotif('Player list cleared');
 }
 
@@ -894,9 +916,9 @@ async function resetGame() {
   gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
   responses = {};
   for (const pid of Object.keys(players)) players[pid].score = 0;
-  await db.ref('responses').remove();
-  await db.ref('gameState').set(gameState);
-  await db.ref('players').set(players);
+  await gref('responses').remove();
+  await gref('gameState').set(gameState);
+  await gref('players').set(players);
   updateUI();
 }
 
