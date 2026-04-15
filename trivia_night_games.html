@@ -267,7 +267,7 @@ const FOUR_HOURS = 4 * 60 * 60 * 1000;
 // ── Auth ──────────────────────────────────────────
 function signInWithGitHub() {
   const provider = new firebase.auth.GithubAuthProvider();
-  auth.signInWithPopup(provider).catch(err => {
+  auth.signInWithRedirect(provider).catch(err => {
     console.error('Sign-in error:', err);
     alert('Sign-in failed: ' + err.message);
   });
@@ -426,6 +426,14 @@ async function confirmRemove() {
 // Close modal on backdrop click
 document.getElementById('remove-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
+});
+
+// Handle redirect result from GitHub OAuth
+auth.getRedirectResult().catch(err => {
+  if (err.code !== 'auth/no-auth-event') {
+    console.error('Redirect sign-in error:', err);
+    alert('Sign-in failed: ' + err.message);
+  }
 });
 
 // Apply saved theme
