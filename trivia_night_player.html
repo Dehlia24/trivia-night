@@ -475,6 +475,7 @@
     <input class="fb-finput" type="text" id="fb-who" placeholder="@yourname" autocomplete="off" style="text-align:left;">
     <label class="fb-label" for="fb-msg">Feedback <span style="color:var(--accent);">*</span></label>
     <textarea class="fb-textarea" id="fb-msg" rows="4" placeholder="What's on your mind?"></textarea>
+    <div id="fb-error" style="display:none;color:#f26b6b;font-size:12px;margin-bottom:10px;"></div>
     <div class="fb-row">
       <button class="fb-cancel-btn" onclick="fbClose()">Cancel</button>
       <button class="fb-submit" id="fb-send" onclick="fbSubmit()">Send ✈</button>
@@ -845,14 +846,25 @@ async function fbSubmit() {
   if (!msg) { document.getElementById('fb-msg').focus(); return; }
   const who = document.getElementById('fb-who').value.trim();
   const btn = document.getElementById('fb-send');
+  const err = document.getElementById('fb-error');
   btn.disabled = true; btn.textContent = 'Sending…';
+  err.style.display = 'none';
   try {
-    await fetch(FB_URL, {
+    const res = await fetch(FB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ _subject: FB_SUBJECT, name: who || '(anonymous)', feedback: msg })
     });
-  } catch (_) {}
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+  } catch (e) {
+    err.textContent = 'Could not send feedback: ' + e.message;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send ✈';
+    return;
+  }
   document.getElementById('fb-form').style.display = 'none';
   document.getElementById('fb-thanks').style.display = '';
   btn.disabled = false; btn.textContent = 'Send ✈';
