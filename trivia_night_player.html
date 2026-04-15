@@ -164,6 +164,70 @@
     }
     .monster-svg { width: 100px; height: 89px; }
   }
+
+  /* ── Feedback Widget ── */
+  .fb-btn {
+    position: fixed; bottom: 20px; right: 20px; z-index: 890;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 99px; cursor: pointer;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.4); transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fb-btn:hover { border-color: var(--accent); color: var(--text); transform: translateY(-1px); }
+  .fb-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); z-index: 1000;
+  }
+  .fb-backdrop.open { display: block; }
+  .fb-panel {
+    display: none; position: fixed; bottom: 72px; right: 20px;
+    width: 310px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px; z-index: 1001;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+  .fb-panel.open { display: block; }
+  .fb-head {
+    font-family: var(--font-head); font-size: 16px; font-weight: 800;
+    margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .fb-close-x {
+    background: none; border: none; color: var(--muted); font-size: 18px;
+    cursor: pointer; padding: 0 2px; line-height: 1; transition: color 0.15s;
+  }
+  .fb-close-x:hover { color: var(--text); }
+  .fb-label { font-size: 12px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 5px; }
+  .fb-finput, .fb-textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: var(--font-body);
+    font-size: 14px; padding: 9px 12px; outline: none;
+    transition: border-color 0.15s; margin-bottom: 12px;
+  }
+  .fb-finput:focus, .fb-textarea:focus { border-color: var(--accent); }
+  .fb-textarea { resize: none; }
+  .fb-row { display: flex; gap: 8px; }
+  .fb-submit {
+    flex: 1; padding: 9px 0; border-radius: 8px; border: none;
+    background: var(--accent); color: #fff; font-family: var(--font-body);
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  .fb-submit:hover { background: #b81c1c; }
+  .fb-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+  .fb-cancel-btn {
+    padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: none; color: var(--muted); font-family: var(--font-body);
+    font-size: 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .fb-cancel-btn:hover { color: var(--text); border-color: var(--text); }
+  .fb-thanks {
+    text-align: center; line-height: 1.6; font-size: 13px; color: var(--muted);
+  }
+  .fb-thanks strong { color: var(--text); font-size: 15px; display: block; margin-bottom: 10px; }
+  .fb-thanks a { color: var(--accent2); text-decoration: none; }
+  .fb-thanks a:hover { text-decoration: underline; }
+  @media (max-width: 380px) {
+    .fb-panel { right: 10px; left: 10px; width: auto; }
+  }
 </style>
 </head>
 <body>
@@ -397,6 +461,35 @@
   <button class="feed-btn" onclick="feedMonster()">Feed me!</button>
 </div>
 </div><!-- end .game-wrapper -->
+
+<!-- Feedback Widget -->
+<button class="fb-btn" onclick="fbOpen()" title="Send feedback">💬 Feedback</button>
+<div class="fb-backdrop" id="fb-backdrop" onclick="fbClose()"></div>
+<div class="fb-panel" id="fb-panel">
+  <div id="fb-form">
+    <div class="fb-head">
+      Send Feedback
+      <button class="fb-close-x" onclick="fbClose()" aria-label="Close">✕</button>
+    </div>
+    <label class="fb-label" for="fb-who">Name or Slack handle <span style="font-weight:400;">(optional)</span></label>
+    <input class="fb-finput" type="text" id="fb-who" placeholder="@yourname" autocomplete="off" style="text-align:left;">
+    <label class="fb-label" for="fb-msg">Feedback <span style="color:var(--accent);">*</span></label>
+    <textarea class="fb-textarea" id="fb-msg" rows="4" placeholder="What's on your mind?"></textarea>
+    <div class="fb-row">
+      <button class="fb-cancel-btn" onclick="fbClose()">Cancel</button>
+      <button class="fb-submit" id="fb-send" onclick="fbSubmit()">Send ✈</button>
+    </div>
+  </div>
+  <div id="fb-thanks" style="display:none;">
+    <div class="fb-thanks">
+      <strong>Thank you for your feedback!</strong>
+      If you want to connect with me directly on this project, feel free to reach out to me on Slack <strong>@kswike</strong> or via email <a href="mailto:ksweiker@redhat.com">ksweiker@redhat.com</a>.
+    </div>
+    <div style="margin-top:16px;">
+      <button class="fb-cancel-btn" style="width:100%;text-align:center;" onclick="fbClose()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -728,6 +821,43 @@ function feedMonster() {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
+
+// ─── Feedback Widget ──────────────────────────────────────────────────────────
+// Setup: go to formspree.io, sign up with ksweiker@redhat.com, create a form,
+// then replace YOUR_FORM_ID below with the ID from your form's endpoint URL.
+const FB_URL     = 'https://formspree.io/f/YOUR_FORM_ID';
+const FB_SUBJECT = 'TRIVIA-PLAYER-FEEDBACK';
+
+function fbOpen() {
+  document.getElementById('fb-backdrop').classList.add('open');
+  document.getElementById('fb-panel').classList.add('open');
+  document.getElementById('fb-form').style.display = '';
+  document.getElementById('fb-thanks').style.display = 'none';
+  document.getElementById('fb-who').value = '';
+  document.getElementById('fb-msg').value = '';
+}
+function fbClose() {
+  document.getElementById('fb-backdrop').classList.remove('open');
+  document.getElementById('fb-panel').classList.remove('open');
+}
+async function fbSubmit() {
+  const msg = document.getElementById('fb-msg').value.trim();
+  if (!msg) { document.getElementById('fb-msg').focus(); return; }
+  const who = document.getElementById('fb-who').value.trim();
+  const btn = document.getElementById('fb-send');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await fetch(FB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ _subject: FB_SUBJECT, name: who || '(anonymous)', feedback: msg })
+    });
+  } catch (_) {}
+  document.getElementById('fb-form').style.display = 'none';
+  document.getElementById('fb-thanks').style.display = '';
+  btn.disabled = false; btn.textContent = 'Send ✈';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fbClose(); });
 </script>
 </body>
 </html>
