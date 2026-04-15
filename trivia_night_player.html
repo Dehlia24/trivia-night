@@ -442,6 +442,11 @@ async function joinGame() {
 
   const snap = await db.ref('players').get();
   const existing = snap.val() || {};
+  if (Object.keys(existing).length >= 100) {
+    document.getElementById('join-btn').disabled = false;
+    document.getElementById('name-error').textContent = 'This game is full (100 player limit). Contact ksweiker@redhat.com for larger events.';
+    return;
+  }
   const taken = Object.values(existing).some(p => p.name?.toLowerCase() === name.toLowerCase());
   if (taken) {
     document.getElementById('join-btn').disabled = false;
