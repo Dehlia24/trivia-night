@@ -445,10 +445,9 @@ function renderGames(games) {
         <a class="join-btn${isEnded ? ' disabled' : ''}" href="${isEnded ? '#' : playerUrl(code)}">
           ${isEnded ? 'Ended' : 'Join as Player'}
         </a>
-        <button class="remove-btn" onclick="promptRemove('${code}', ${JSON.stringify(name)})">
-          ✕ Remove
-        </button>
+        <button class="remove-btn">✕ Remove</button>
       </div>`;
+    card.querySelector('.remove-btn').addEventListener('click', () => promptRemove(code, name));
     list.appendChild(card);
   }
 
