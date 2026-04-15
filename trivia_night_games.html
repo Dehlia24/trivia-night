@@ -202,6 +202,7 @@
       </svg>
       Sign in with GitHub
     </button>
+    <p id="auth-status" style="margin-top:16px; font-size:12px; color:var(--muted); min-height:18px;"></p>
   </div>
 </div>
 
@@ -265,12 +266,30 @@ const ALLOWED_GITHUB_LOGIN = 'dehlia24';
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
 
 // ── Auth ──────────────────────────────────────────
-function signInWithGitHub() {
+async function signInWithGitHub() {
   const provider = new firebase.auth.GithubAuthProvider();
-  auth.signInWithRedirect(provider).catch(err => {
-    console.error('Sign-in error:', err);
-    alert('Sign-in failed: ' + err.message);
-  });
+  setAuthStatus('Connecting to GitHub…');
+  try {
+    // Popup is more reliable on GitHub Pages — no cross-domain redirect issues
+    const result = await auth.signInWithPopup(provider);
+    const login = result.additionalUserInfo?.username || null;
+    if (login) localStorage.setItem('gh_login', login);
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
+      // Fall back to redirect if popup was blocked
+      setAuthStatus('Popup blocked — redirecting to GitHub…');
+      await auth.signInWithRedirect(provider).catch(e => {
+        setAuthStatus('Sign-in failed: ' + e.message);
+      });
+    } else {
+      setAuthStatus('Sign-in failed: ' + err.message);
+      console.error('Sign-in error:', err.code, err.message);
+    }
+  }
+}
+
+function setAuthStatus(msg) {
+  document.getElementById('auth-status').textContent = msg;
 }
 
 function signOut() {
@@ -278,10 +297,8 @@ function signOut() {
   auth.signOut();
 }
 
-// GitHub username is only available in additionalUserInfo on the redirect
-// result — providerData.screenName is unreliable. Cache it in localStorage
-// so subsequent page loads don't require a new redirect.
 async function initAuth() {
+  // Handle redirect fallback result (popup-blocked case)
   try {
     const result = await auth.getRedirectResult();
     if (result && result.user) {
@@ -289,10 +306,9 @@ async function initAuth() {
       if (login) localStorage.setItem('gh_login', login);
     }
   } catch (err) {
-    if (err.code && err.code !== 'auth/no-auth-event') {
-      console.error('Redirect sign-in error:', err);
-      alert('Sign-in failed: ' + err.message);
-    }
+    // Show all errors so we can see what's going wrong
+    setAuthStatus('Auth error: ' + err.code + ' — ' + err.message);
+    console.error('getRedirectResult error:', err);
   }
 
   auth.onAuthStateChanged(user => {
