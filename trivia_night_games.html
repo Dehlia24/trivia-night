@@ -266,23 +266,34 @@ const ALLOWED_GITHUB_LOGIN = 'dehlia24';
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
 
 // ── Auth ──────────────────────────────────────────
+function extractGitHubLogin(result) {
+  // Try every place Firebase might put the GitHub username
+  return result.additionalUserInfo?.username
+      || result.additionalUserInfo?.profile?.login
+      || null;
+}
+
 async function signInWithGitHub() {
   const provider = new firebase.auth.GithubAuthProvider();
   setAuthStatus('Connecting to GitHub…');
   try {
-    // Popup is more reliable on GitHub Pages — no cross-domain redirect issues
     const result = await auth.signInWithPopup(provider);
-    const login = result.additionalUserInfo?.username || null;
-    if (login) localStorage.setItem('gh_login', login);
+    const login = extractGitHubLogin(result);
+    console.log('additionalUserInfo:', JSON.stringify(result.additionalUserInfo));
+    console.log('Extracted login:', login);
+    if (login) {
+      localStorage.setItem('gh_login', login);
+    } else {
+      setAuthStatus('Could not read GitHub username. Check console for details.');
+    }
   } catch (err) {
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
-      // Fall back to redirect if popup was blocked
       setAuthStatus('Popup blocked — redirecting to GitHub…');
       await auth.signInWithRedirect(provider).catch(e => {
         setAuthStatus('Sign-in failed: ' + e.message);
       });
     } else {
-      setAuthStatus('Sign-in failed: ' + err.message);
+      setAuthStatus('Sign-in failed (' + err.code + '): ' + err.message);
       console.error('Sign-in error:', err.code, err.message);
     }
   }
@@ -302,11 +313,11 @@ async function initAuth() {
   try {
     const result = await auth.getRedirectResult();
     if (result && result.user) {
-      const login = result.additionalUserInfo?.username || null;
+      const login = extractGitHubLogin(result);
+      console.log('Redirect result login:', login);
       if (login) localStorage.setItem('gh_login', login);
     }
   } catch (err) {
-    // Show all errors so we can see what's going wrong
     setAuthStatus('Auth error: ' + err.code + ' — ' + err.message);
     console.error('getRedirectResult error:', err);
   }
@@ -319,8 +330,13 @@ async function initAuth() {
     }
 
     const ghLogin = localStorage.getItem('gh_login');
+    console.log('onAuthStateChanged — user uid:', user.uid, '| cached login:', ghLogin);
 
     if (ghLogin !== ALLOWED_GITHUB_LOGIN) {
+      // Show what login we actually got so the user can see the mismatch
+      document.querySelector('#denied-screen .denied-sub').textContent =
+        'Signed in as: "' + (ghLogin || '(username not captured)') + '". '
+        + 'Expected: "' + ALLOWED_GITHUB_LOGIN + '". Sign out and try again.';
       showScreen('denied');
       return;
     }
