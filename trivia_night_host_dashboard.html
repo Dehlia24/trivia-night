@@ -1189,8 +1189,11 @@ async function generateQuestions() {
   if (category)   url += '&category='   + category;
   if (difficulty) url += '&difficulty=' + difficulty;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data = await resp.json();
     if (data.response_code !== 0) { showNotif('Not enough questions for that filter — try loosening the category or difficulty', 'error'); btn.disabled = false; btnText.textContent = '↓ Fetch Questions'; return; }
 
@@ -1204,7 +1207,11 @@ async function generateQuestions() {
     await gref('questionBank').set(questionBank);
     renderQuestionsEditor();
     showNotif('Added ' + newQs.length + ' questions!');
-  } catch(e) { showNotif('Fetch failed: ' + e.message, 'error'); }
+  } catch(e) {
+    clearTimeout(timeoutId);
+    const msg = e.name === 'AbortError' ? 'Request timed out — Open Trivia DB may be down. Try again later.' : 'Fetch failed: ' + e.message;
+    showNotif(msg, 'error');
+  }
   btn.disabled = false;
   btnText.textContent = '↓ Fetch Questions';
 }
