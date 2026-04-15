@@ -266,11 +266,13 @@ const ALLOWED_GITHUB_LOGIN = 'Dehlia24';
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
 
 // ── Auth ──────────────────────────────────────────
-function extractGitHubLogin(result) {
-  // Try every place Firebase might put the GitHub username
-  return result.additionalUserInfo?.username
-      || result.additionalUserInfo?.profile?.login
-      || null;
+async function fetchGitHubLogin(accessToken) {
+  const res = await fetch('https://api.github.com/user', {
+    headers: { Authorization: 'token ' + accessToken }
+  });
+  if (!res.ok) throw new Error('GitHub API error: ' + res.status);
+  const data = await res.json();
+  return data.login || null;
 }
 
 async function signInWithGitHub() {
@@ -278,13 +280,16 @@ async function signInWithGitHub() {
   setAuthStatus('Connecting to GitHub…');
   try {
     const result = await auth.signInWithPopup(provider);
-    const login = extractGitHubLogin(result);
-    console.log('additionalUserInfo:', JSON.stringify(result.additionalUserInfo));
-    console.log('Extracted login:', login);
+    // Use the GitHub access token to fetch the username directly from GitHub API
+    // — additionalUserInfo is unreliable for returning users
+    const accessToken = result.credential?.accessToken;
+    if (!accessToken) throw new Error('No access token returned from GitHub');
+    setAuthStatus('Verifying identity…');
+    const login = await fetchGitHubLogin(accessToken);
     if (login) {
       localStorage.setItem('gh_login', login);
     } else {
-      setAuthStatus('Could not read GitHub username. Check console for details.');
+      setAuthStatus('Could not read GitHub username from API.');
     }
   } catch (err) {
     if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') {
@@ -293,8 +298,8 @@ async function signInWithGitHub() {
         setAuthStatus('Sign-in failed: ' + e.message);
       });
     } else {
-      setAuthStatus('Sign-in failed (' + err.code + '): ' + err.message);
-      console.error('Sign-in error:', err.code, err.message);
+      setAuthStatus('Sign-in failed (' + (err.code || '') + '): ' + err.message);
+      console.error('Sign-in error:', err);
     }
   }
 }
@@ -312,13 +317,12 @@ async function initAuth() {
   // Handle redirect fallback result (popup-blocked case)
   try {
     const result = await auth.getRedirectResult();
-    if (result && result.user) {
-      const login = extractGitHubLogin(result);
-      console.log('Redirect result login:', login);
+    if (result && result.user && result.credential?.accessToken) {
+      const login = await fetchGitHubLogin(result.credential.accessToken);
       if (login) localStorage.setItem('gh_login', login);
     }
   } catch (err) {
-    setAuthStatus('Auth error: ' + err.code + ' — ' + err.message);
+    setAuthStatus('Auth error: ' + (err.code || '') + ' — ' + err.message);
     console.error('getRedirectResult error:', err);
   }
 
