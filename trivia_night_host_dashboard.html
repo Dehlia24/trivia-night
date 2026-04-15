@@ -1198,6 +1198,23 @@ function clearPins() {
   showNotif('All pins cleared');
 }
 
+// OpenTDB category ID → The Trivia API category slug
+const TRIVIA_API_CAT = {
+  '9': 'general_knowledge', '17': 'science', '18': 'science',
+  '11': 'film_and_tv', '12': 'music', '15': 'video_games',
+  '21': 'sport_and_leisure', '22': 'geography', '23': 'history', '26': 'history'
+};
+
+async function fetchWithTimeout(url, ms) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(tid);
+    return r;
+  } catch(e) { clearTimeout(tid); throw e; }
+}
+
 async function generateQuestions() {
   const btn = document.getElementById('gen-btn');
   const btnText = document.getElementById('gen-btn-text');
@@ -1207,33 +1224,60 @@ async function generateQuestions() {
   const category = document.getElementById('otdb-category').value;
   const difficulty = document.getElementById('otdb-difficulty').value;
   const amount = Math.min(50, Math.max(1, parseInt(document.getElementById('otdb-amount').value) || 10));
-  let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
-  if (category)   url += '&category='   + category;
-  if (difficulty) url += '&difficulty=' + difficulty;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  let newQs = null;
+
+  // ── Primary: OpenTDB ────────────────────────────────────────────────────────
   try {
-    const resp = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
+    if (category)   url += '&category='   + category;
+    if (difficulty) url += '&difficulty=' + difficulty;
+    const resp = await fetchWithTimeout(url, 8000);
     const data = await resp.json();
-    if (data.response_code !== 0) { showNotif('Not enough questions for that filter — try loosening the category or difficulty', 'error'); btn.disabled = false; btnText.textContent = '↓ Fetch Questions'; return; }
+    if (data.response_code === 0) {
+      const decode = s => new DOMParser().parseFromString(s, 'text/html').body.textContent;
+      newQs = data.results.map(r => {
+        const opts = [...r.incorrect_answers, r.correct_answer].map(decode).sort(() => Math.random() - 0.5);
+        return { question: decode(r.question), options: opts, correct: opts.indexOf(decode(r.correct_answer)), category: decode(r.category) };
+      });
+    }
+  } catch(_) { /* fall through to backup */ }
 
-    const decode = s => new DOMParser().parseFromString(s, 'text/html').body.textContent;
-    const newQs = data.results.map(r => {
-      const opts = [...r.incorrect_answers, r.correct_answer].map(decode).sort(() => Math.random() - 0.5);
-      return { question: decode(r.question), options: opts, correct: opts.indexOf(decode(r.correct_answer)), category: decode(r.category) };
-    });
-
-    questionBank = [...questionBank, ...newQs];
-    await gref('questionBank').set(questionBank);
-    renderQuestionsEditor();
+  // ── Fallback: The Trivia API ────────────────────────────────────────────────
+  if (!newQs) {
+    btnText.innerHTML = '<span class="spinner"></span> Trying backup…';
+    try {
+      let url = `https://the-trivia-api.com/v2/questions?limit=${amount}`;
+      if (category && TRIVIA_API_CAT[category]) url += '&categories=' + TRIVIA_API_CAT[category];
+      if (difficulty) url += '&difficulties=' + difficulty;
+      const resp = await fetchWithTimeout(url, 10000);
+      const data = await resp.json();
+      if (Array.isArray(data) && data.length) {
+        const fmtCat = slug => slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        newQs = data.map(r => {
+          const opts = [...r.incorrectAnswers, r.correctAnswer].sort(() => Math.random() - 0.5);
+          return { question: r.question.text, options: opts, correct: opts.indexOf(r.correctAnswer), category: fmtCat(r.category) };
+        });
+        showNotif(`Added ${newQs.length} questions! (via backup source)`);
+      }
+    } catch(e) {
+      showNotif('Both question sources are unavailable. Try again later.', 'error');
+      btn.disabled = false; btnText.textContent = '↓ Fetch Questions';
+      return;
+    }
+  } else {
     showNotif('Added ' + newQs.length + ' questions!');
-  } catch(e) {
-    clearTimeout(timeoutId);
-    const msg = e.name === 'AbortError' ? 'Request timed out — Open Trivia DB may be down. Try again later.' : 'Fetch failed: ' + e.message;
-    showNotif(msg, 'error');
   }
+
+  if (!newQs || !newQs.length) {
+    showNotif('No questions returned — try loosening the category or difficulty', 'error');
+    btn.disabled = false; btnText.textContent = '↓ Fetch Questions';
+    return;
+  }
+
+  questionBank = [...questionBank, ...newQs];
+  await gref('questionBank').set(questionBank);
+  renderQuestionsEditor();
   btn.disabled = false;
   btnText.textContent = '↓ Fetch Questions';
 }
