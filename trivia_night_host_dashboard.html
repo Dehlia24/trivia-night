@@ -283,6 +283,10 @@
   .tmpl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .tmpl-select { flex: 1; min-width: 160px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px; outline: none; }
   .tmpl-select:focus { border-color: var(--accent); }
+  .tmpl-search { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px 8px 32px; outline: none; margin-bottom: 8px; }
+  .tmpl-search:focus { border-color: var(--accent); }
+  .tmpl-search-wrap { position: relative; }
+  .tmpl-search-wrap::before { content: '🔍'; position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
   .tmpl-info { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
   .tmpl-save-row { display: none; margin-top: 10px; gap: 8px; }
   .tmpl-save-row.open { display: flex; }
@@ -567,6 +571,10 @@
         <!-- Template Manager -->
         <div class="tmpl-bar">
           <div class="tmpl-bar-title">Question Bank Templates</div>
+          <div class="tmpl-search-wrap">
+            <input class="tmpl-search" id="tmpl-search" type="text" placeholder="Search templates…" maxlength="60"
+              oninput="populateTemplateDropdown()" onkeydown="if(event.key==='Escape'){this.value='';populateTemplateDropdown();}">
+          </div>
           <div class="tmpl-row">
             <select class="tmpl-select" id="template-select" onchange="onTemplateSelect()">
               <option value="">— Select a template —</option>
@@ -1297,9 +1305,11 @@ async function endSession() {
 function populateTemplateDropdown() {
   const sel = document.getElementById('template-select');
   const current = sel.value;
+  const filter = (document.getElementById('tmpl-search')?.value || '').toLowerCase().trim();
   sel.innerHTML = '<option value="">— Select a template —</option>';
   const sorted = Object.entries(templates).sort(([,a],[,b]) => (b.savedAt||0) - (a.savedAt||0));
   for (const [key, tmpl] of sorted) {
+    if (filter && !tmpl.name.toLowerCase().includes(filter)) continue;
     const opt = document.createElement('option');
     opt.value = key;
     const qCount = Array.isArray(tmpl.questions) ? tmpl.questions.length : 0;
