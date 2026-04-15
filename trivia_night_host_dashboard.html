@@ -1488,7 +1488,9 @@ function initChat() {
 
   const chatStartTs = Date.now();
   gref('chat').limitToLast(50).on('child_added', snap => {
-    const { name, text, ts } = snap.val();
+    const val = snap.val();
+    if (!val || typeof val.text !== 'string') return;
+    const { name = 'Host', text, ts = Date.now() } = val;
     const div = document.createElement('div');
     div.className = 'chat-message';
     const t = new Date(ts);
