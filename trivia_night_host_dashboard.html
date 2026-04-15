@@ -250,6 +250,18 @@
     div[style*="display:flex;gap:6px"] .btn { font-size: 11px; padding: 5px 9px; }
   }
 
+  /* ── Template bar ── */
+  .tmpl-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .tmpl-bar-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .tmpl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tmpl-select { flex: 1; min-width: 160px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px; outline: none; }
+  .tmpl-select:focus { border-color: var(--accent); }
+  .tmpl-info { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
+  .tmpl-save-row { display: none; margin-top: 10px; gap: 8px; }
+  .tmpl-save-row.open { display: flex; }
+  .tmpl-name-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 8px 12px; outline: none; }
+  .tmpl-name-input:focus { border-color: var(--green); }
+
   @media (max-width: 420px) {
     .tabs .tab { font-size: 12px; padding: 7px 8px; }
     .q-text { font-size: 16px; }
@@ -447,6 +459,27 @@
 
       <!-- QUESTIONS VIEW -->
       <div class="view" id="view-questions">
+
+        <!-- Template Manager -->
+        <div class="tmpl-bar">
+          <div class="tmpl-bar-title">Question Bank Templates</div>
+          <div class="tmpl-row">
+            <select class="tmpl-select" id="template-select" onchange="onTemplateSelect()">
+              <option value="">— Select a template —</option>
+            </select>
+            <button class="btn btn-secondary" onclick="loadSelectedTemplate()" style="font-size:13px;padding:8px 14px;">Load</button>
+            <button class="btn btn-success" onclick="openSaveTemplate()" style="font-size:13px;padding:8px 14px;">Save as template</button>
+            <button class="btn btn-danger" id="tmpl-delete-btn" onclick="deleteSelectedTemplate()" style="font-size:13px;padding:8px 14px;display:none;">Delete</button>
+          </div>
+          <div class="tmpl-save-row" id="tmpl-save-row">
+            <input class="tmpl-name-input" type="text" id="tmpl-name-input" placeholder="Template name..." maxlength="60"
+              onkeydown="if(event.key==='Enter')confirmSaveTemplate();if(event.key==='Escape')closeSaveTemplate();">
+            <button class="btn btn-success" onclick="confirmSaveTemplate()" style="font-size:13px;padding:8px 14px;">Save</button>
+            <button class="btn btn-secondary" onclick="closeSaveTemplate()" style="font-size:13px;padding:8px 14px;">Cancel</button>
+          </div>
+          <div class="tmpl-info" id="tmpl-info"></div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="font-family:var(--font-head);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Question Bank — <span id="bank-count">0</span> questions</div>
           <div style="display:flex;gap:6px;">
@@ -562,9 +595,10 @@ function gref(path) { return db.ref('games/' + gameCode + '/' + path); }
 
 let gameState = { status: 'waiting', currentQ: 0, revealed: false, timerRunning: false, timeLeft: 30, scores: {} };
 let questions = [];       // active game questions (random sample chosen at start)
-let questionBank = [];    // full pool stored in /questionBank
-let usedQuestions = {};   // { fingerprint: timestamp } — persisted in /usedQuestions
+let questionBank = [];    // full pool stored in games/<code>/questionBank
+let usedQuestions = {};   // { fingerprint: timestamp } — persisted in games/<code>/usedQuestions
 let pinnedQuestions = {}; // { fingerprint: true } — guaranteed in next game
+let templates = {};       // globally shared named banks, stored in /templates
 let responses = {};
 let players = {};
 let timerInterval = null;
@@ -618,13 +652,13 @@ async function init() {
   const playerBase = location.origin + location.pathname.replace('trivia_night_host_dashboard.html', 'trivia_night_player.html');
   document.getElementById('join-url').textContent = playerBase + '?code=' + gameCode;
 
-  const qSnap = await db.ref('questionBank').get();
+  const qSnap = await gref('questionBank').get();
   const savedQ = qSnap.val();
   if (savedQ) {
     questionBank = Array.isArray(savedQ) ? savedQ : Object.values(savedQ);
   } else {
     questionBank = getDefaultQuestions();
-    await db.ref('questionBank').set(questionBank);
+    await gref('questionBank').set(questionBank);
   }
 
   // ── Game state (syncs game controls across all open host dashboards) ──────────
@@ -650,14 +684,14 @@ async function init() {
   });
 
   // ── Question bank (syncs count; avoids re-rendering editor mid-edit) ──────────
-  db.ref('questionBank').on('value', snap => {
+  gref('questionBank').on('value', snap => {
     const bank = snap.val();
     questionBank = bank ? (Array.isArray(bank) ? bank : Object.values(bank)) : [];
     updateBankCount();
   });
 
   // ── Used questions (tracks which questions were used in the last 24h) ─────────
-  db.ref('usedQuestions').on('value', snap => {
+  gref('usedQuestions').on('value', snap => {
     const now = Date.now();
     const raw = snap.val() || {};
     usedQuestions = Object.fromEntries(Object.entries(raw).filter(([, ts]) => ts > now - DAY_MS));
@@ -665,9 +699,15 @@ async function init() {
   });
 
   // ── Pinned questions (guaranteed inclusion in next game) ──────────────────────
-  db.ref('pinnedQuestions').on('value', snap => {
+  gref('pinnedQuestions').on('value', snap => {
     pinnedQuestions = snap.val() || {};
     updateBankCount();
+  });
+
+  // ── Shared templates (globally accessible named question banks) ───────────────
+  db.ref('templates').on('value', snap => {
+    templates = snap.val() || {};
+    populateTemplateDropdown();
   });
 
   // ── Players & responses ───────────────────────────────────────────────────────
@@ -784,7 +824,7 @@ function startGame() {
   const now = Date.now();
   const newUsed = { ...usedQuestions };
   for (const q of questions) newUsed[hashQuestion(q)] = now;
-  db.ref('usedQuestions').set(newUsed);
+  gref('usedQuestions').set(newUsed);
   maxTime = parseInt(document.getElementById('time-setting').value) || 30;
   gameState.status = 'active'; gameState.currentQ = 0; gameState.revealed = false; gameState.scores = {};
   gameState.timeLeft = maxTime;
@@ -971,39 +1011,39 @@ function renderQuestionsEditor() {
   });
 }
 
-function updateQ(qi, field, val) { questionBank[qi][field] = val; db.ref('questionBank').set(questionBank); }
-function updateQOption(qi, oi, val) { questionBank[qi].options[oi] = val; db.ref('questionBank').set(questionBank); }
-function setCorrect(qi, oi) { questionBank[qi].correct = oi; db.ref('questionBank').set(questionBank); renderQuestionsEditor(); }
+function updateQ(qi, field, val) { questionBank[qi][field] = val; gref('questionBank').set(questionBank); }
+function updateQOption(qi, oi, val) { questionBank[qi].options[oi] = val; gref('questionBank').set(questionBank); }
+function setCorrect(qi, oi) { questionBank[qi].correct = oi; gref('questionBank').set(questionBank); renderQuestionsEditor(); }
 function removeQuestion(qi) {
   const hash = hashQuestion(questionBank[qi]);
-  if (pinnedQuestions[hash]) { delete pinnedQuestions[hash]; db.ref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null); }
-  questionBank.splice(qi, 1); db.ref('questionBank').set(questionBank); renderQuestionsEditor();
+  if (pinnedQuestions[hash]) { delete pinnedQuestions[hash]; gref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null); }
+  questionBank.splice(qi, 1); gref('questionBank').set(questionBank); renderQuestionsEditor();
 }
 function togglePin(qi) {
   const hash = hashQuestion(questionBank[qi]);
   if (pinnedQuestions[hash]) { delete pinnedQuestions[hash]; } else { pinnedQuestions[hash] = true; }
-  db.ref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null);
+  gref('pinnedQuestions').set(Object.keys(pinnedQuestions).length ? pinnedQuestions : null);
   renderQuestionsEditor(); updateBankCount();
 }
 function addBlankQuestion() {
   questionBank.unshift({ question: 'New question', options: ['Option A','Option B','Option C','Option D'], correct: 0, category: 'General' });
-  db.ref('questionBank').set(questionBank); renderQuestionsEditor();
+  gref('questionBank').set(questionBank); renderQuestionsEditor();
 }
 function clearBank() {
   if (!confirm('Clear all ' + questionBank.length + ' questions from the bank?')) return;
   questionBank = [];
-  db.ref('questionBank').remove();
+  gref('questionBank').remove();
   renderQuestionsEditor();
 }
 
 function resetUsage() {
   usedQuestions = {};
-  db.ref('usedQuestions').remove();
+  gref('usedQuestions').remove();
   showNotif('Question usage history cleared');
 }
 function clearPins() {
   pinnedQuestions = {};
-  db.ref('pinnedQuestions').remove();
+  gref('pinnedQuestions').remove();
   renderQuestionsEditor(); updateBankCount();
   showNotif('All pins cleared');
 }
@@ -1032,12 +1072,91 @@ async function generateQuestions() {
     });
 
     questionBank = [...questionBank, ...newQs];
-    await db.ref('questionBank').set(questionBank);
+    await gref('questionBank').set(questionBank);
     renderQuestionsEditor();
     showNotif('Added ' + newQs.length + ' questions!');
   } catch(e) { showNotif('Fetch failed: ' + e.message, 'error'); }
   btn.disabled = false;
   btnText.textContent = '↓ Fetch Questions';
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+function populateTemplateDropdown() {
+  const sel = document.getElementById('template-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select a template —</option>';
+  const sorted = Object.entries(templates).sort(([,a],[,b]) => (b.savedAt||0) - (a.savedAt||0));
+  for (const [key, tmpl] of sorted) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    const qCount = Array.isArray(tmpl.questions) ? tmpl.questions.length : 0;
+    const date = tmpl.savedAt ? new Date(tmpl.savedAt).toLocaleDateString() : '';
+    opt.textContent = `${tmpl.name}  (${qCount}q${date ? ' · ' + date : ''})`;
+    sel.appendChild(opt);
+  }
+  if (current && templates[current]) sel.value = current;
+  onTemplateSelect();
+}
+
+function onTemplateSelect() {
+  const key = document.getElementById('template-select').value;
+  const info = document.getElementById('tmpl-info');
+  const delBtn = document.getElementById('tmpl-delete-btn');
+  if (!key || !templates[key]) {
+    info.textContent = '';
+    delBtn.style.display = 'none';
+    return;
+  }
+  const tmpl = templates[key];
+  const qCount = Array.isArray(tmpl.questions) ? tmpl.questions.length : 0;
+  const date = tmpl.savedAt ? new Date(tmpl.savedAt).toLocaleString() : 'unknown';
+  info.textContent = `${qCount} question${qCount !== 1 ? 's' : ''} · Saved ${date}`;
+  delBtn.style.display = '';
+}
+
+async function loadSelectedTemplate() {
+  const key = document.getElementById('template-select').value;
+  if (!key || !templates[key]) { showNotif('Select a template first', 'error'); return; }
+  const tmpl = templates[key];
+  if (questionBank.length > 0 && !confirm(`Replace your current ${questionBank.length}-question bank with "${tmpl.name}"?`)) return;
+  questionBank = Array.isArray(tmpl.questions) ? [...tmpl.questions] : Object.values(tmpl.questions);
+  await gref('questionBank').set(questionBank);
+  renderQuestionsEditor();
+  showNotif(`Loaded template "${tmpl.name}"`);
+}
+
+function openSaveTemplate() {
+  if (questionBank.length === 0) { showNotif('Add some questions before saving a template', 'error'); return; }
+  const row = document.getElementById('tmpl-save-row');
+  row.classList.add('open');
+  const input = document.getElementById('tmpl-name-input');
+  input.value = '';
+  input.focus();
+}
+
+function closeSaveTemplate() {
+  document.getElementById('tmpl-save-row').classList.remove('open');
+  document.getElementById('tmpl-name-input').value = '';
+}
+
+async function confirmSaveTemplate() {
+  const name = document.getElementById('tmpl-name-input').value.trim();
+  if (!name) { document.getElementById('tmpl-name-input').focus(); return; }
+  const key = 'tmpl_' + Date.now();
+  await db.ref('templates/' + key).set({ name, questions: questionBank, savedAt: Date.now() });
+  closeSaveTemplate();
+  showNotif(`Template "${name}" saved!`);
+  // Auto-select the newly saved template
+  setTimeout(() => { document.getElementById('template-select').value = key; onTemplateSelect(); }, 300);
+}
+
+async function deleteSelectedTemplate() {
+  const key = document.getElementById('template-select').value;
+  if (!key || !templates[key]) return;
+  const name = templates[key].name;
+  if (!confirm(`Delete template "${name}"? This cannot be undone.`)) return;
+  await db.ref('templates/' + key).remove();
+  showNotif(`Template "${name}" deleted`);
 }
 
 // ─── Theme (host-local, independent of player preference) ────────────────────
