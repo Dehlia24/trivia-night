@@ -274,32 +274,50 @@ function signInWithGitHub() {
 }
 
 function signOut() {
+  localStorage.removeItem('gh_login');
   auth.signOut();
 }
 
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    showScreen('auth');
-    return;
+// GitHub username is only available in additionalUserInfo on the redirect
+// result — providerData.screenName is unreliable. Cache it in localStorage
+// so subsequent page loads don't require a new redirect.
+async function initAuth() {
+  try {
+    const result = await auth.getRedirectResult();
+    if (result && result.user) {
+      const login = result.additionalUserInfo?.username || null;
+      if (login) localStorage.setItem('gh_login', login);
+    }
+  } catch (err) {
+    if (err.code && err.code !== 'auth/no-auth-event') {
+      console.error('Redirect sign-in error:', err);
+      alert('Sign-in failed: ' + err.message);
+    }
   }
 
-  // Extract GitHub username from providerData
-  const ghProvider = user.providerData.find(p => p.providerId === 'github.com');
-  const ghLogin = ghProvider?.screenName || null;
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      localStorage.removeItem('gh_login');
+      showScreen('auth');
+      return;
+    }
 
-  if (ghLogin !== ALLOWED_GITHUB_LOGIN) {
-    showScreen('denied');
-    // Show who is signed in so they know which account to switch
-    return;
-  }
+    const ghLogin = localStorage.getItem('gh_login');
 
-  // Authorized — show main UI
-  document.getElementById('user-avatar').src = user.photoURL || '';
-  document.getElementById('user-name').textContent = ghLogin;
-  document.getElementById('header-user').style.display = 'flex';
-  showScreen('main');
-  startListening();
-});
+    if (ghLogin !== ALLOWED_GITHUB_LOGIN) {
+      showScreen('denied');
+      return;
+    }
+
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = ghLogin;
+    document.getElementById('header-user').style.display = 'flex';
+    showScreen('main');
+    startListening();
+  });
+}
+
+initAuth();
 
 function showScreen(name) {
   document.getElementById('auth-screen').style.display    = name === 'auth'   ? 'flex' : 'none';
@@ -426,14 +444,6 @@ async function confirmRemove() {
 // Close modal on backdrop click
 document.getElementById('remove-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
-});
-
-// Handle redirect result from GitHub OAuth
-auth.getRedirectResult().catch(err => {
-  if (err.code !== 'auth/no-auth-event') {
-    console.error('Redirect sign-in error:', err);
-    alert('Sign-in failed: ' + err.message);
-  }
 });
 
 // Apply saved theme
