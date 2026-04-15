@@ -238,6 +238,25 @@
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀️</button>
   </div>
 
+  <!-- REJOIN SCREEN -->
+  <div class="screen" id="screen-rejoin">
+    <h2>Welcome back!</h2>
+    <div class="sub">Found your previous session</div>
+    <div style="font-family:var(--font-head);font-size:26px;font-weight:800;margin:20px 0;color:var(--accent2);" id="rejoin-name"></div>
+    <button class="btn-join" onclick="doRejoin()">Rejoin as this player →</button>
+    <button onclick="rejoinAsNew()" style="background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-top:16px;display:block;width:100%;text-align:center;">Join as a different player</button>
+  </div>
+
+  <!-- KICKED SCREEN -->
+  <div class="screen" id="screen-kicked">
+    <div style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🚫</div>
+      <h2>Removed from game</h2>
+      <div class="sub">The host has removed you from this game.</div>
+      <button class="btn-join" onclick="location.reload()" style="margin-top:24px;">Try joining again →</button>
+    </div>
+  </div>
+
   <!-- CODE ENTRY SCREEN -->
   <div class="screen" id="screen-code">
     <h2>Join a Game</h2>
@@ -251,8 +270,9 @@
 
   <!-- JOIN SCREEN -->
   <div class="screen" id="screen-join">
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Game Code</div>
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--text);min-height:24px;" id="join-game-name"></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:6px;margin-bottom:4px;">Game Code</div>
       <div style="font-family:var(--font-head);font-size:22px;font-weight:800;letter-spacing:5px;color:var(--accent2);" id="join-code-display"></div>
     </div>
     <h2>Join the Game</h2>
@@ -266,6 +286,7 @@
   <div class="screen" id="screen-waiting">
     <div class="waiting-anim">
       <div class="pulse-ring"><div class="pulse-inner"></div></div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;min-height:18px;" id="wait-game-name"></div>
       <h2>You're In!</h2>
       <p class="sub" style="margin-bottom:0;">Waiting for the host to start the game...</p>
       <p style="margin-top:16px;color:var(--accent);font-family:var(--font-head);font-size:18px;font-weight:700;" id="wait-name"></p>
@@ -591,9 +612,16 @@ async function joinGame() {
   gref('players/' + myId).onDisconnect().remove();
   gref('responses/' + myId).onDisconnect().remove();
 
+  // Save session for potential rejoin
+  sessionStorage.setItem('trivia_session', JSON.stringify({ gameCode, myId, myName, myScore: 0 }));
+
   document.getElementById('wait-name').textContent = myName;
   showScreen('screen-waiting');
 
+  attachGameListeners();
+}
+
+function attachGameListeners() {
   gref('questions').on('value', snap => {
     const qs = snap.val();
     if (qs) questions = Array.isArray(qs) ? qs : Object.values(qs);
@@ -601,12 +629,36 @@ async function joinGame() {
 
   gref('players/' + myId + '/score').on('value', snap => {
     const score = snap.val();
-    if (score !== null && score !== undefined) myScore = score;
+    if (score !== null && score !== undefined) {
+      myScore = score;
+      try {
+        const sess = JSON.parse(sessionStorage.getItem('trivia_session') || '{}');
+        if (sess.myId === myId) { sess.myScore = score; sessionStorage.setItem('trivia_session', JSON.stringify(sess)); }
+      } catch(_) {}
+    }
   });
 
   gref('gameState').on('value', snap => {
     const state = snap.val();
     if (state) onGameStateChange(state);
+  });
+
+  // Kick detection
+  gref('players/' + myId).on('value', snap => {
+    if (myId && snap.val() === null && gameStatus !== 'gameover' && gameStatus !== 'waiting') {
+      sessionStorage.removeItem('trivia_session');
+      clearInterval(timerInterval);
+      showScreen('screen-kicked');
+    }
+  });
+
+  // Game name display
+  gref('name').on('value', snap => {
+    const name = snap.val() || '';
+    const wEl = document.getElementById('wait-game-name');
+    const jEl = document.getElementById('join-game-name');
+    if (wEl) wEl.textContent = name;
+    if (jEl) jEl.textContent = name;
   });
 }
 
@@ -777,6 +829,7 @@ function showGameOver(players) {
 function resetToJoin() {
   gref('gameState').off();
   clearInterval(timerInterval);
+  sessionStorage.removeItem('trivia_session');
   myId = null; myName = ''; myScore = 0; myAnswers = {};
   currentQIdx = -1; gameStatus = 'waiting'; questions = [];
   document.getElementById('name-input').value = '';
@@ -852,15 +905,73 @@ function feedMonster() {
   }, 300);
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
-// Show code entry screen if no code in URL, otherwise go straight to join
-if (gameCode) {
+// ─── Rejoin support ───────────────────────────────────────────────────────────
+let savedSession = null;
+
+async function checkRejoin() {
+  try {
+    const raw = sessionStorage.getItem('trivia_session');
+    if (!raw) return false;
+    const sess = JSON.parse(raw);
+    if (!sess.myId || !sess.gameCode) return false;
+    if (gameCode && sess.gameCode !== gameCode) return false;
+    if (!gameCode) gameCode = sess.gameCode;
+    const stateSnap = await gref('gameState').get();
+    const state = stateSnap.val();
+    if (!state || state.status === 'gameover') return false;
+    savedSession = sess;
+    return true;
+  } catch(_) { return false; }
+}
+
+async function doRejoin() {
+  if (!savedSession) return;
+  myId   = savedSession.myId;
+  myName = savedSession.myName;
+
+  // Re-add to Firebase in case onDisconnect removed them
+  const existing = await gref('players/' + myId).get();
+  if (!existing.val()) {
+    await gref('players/' + myId).set({ name: myName, score: savedSession.myScore || 0 });
+  }
+  gref('players/' + myId).onDisconnect().remove();
+  gref('responses/' + myId).onDisconnect().remove();
+
+  document.getElementById('wait-name').textContent = myName;
+  showScreen('screen-waiting');
+  attachGameListeners();
+}
+
+function rejoinAsNew() {
+  sessionStorage.removeItem('trivia_session');
+  savedSession = null;
   document.getElementById('join-code-display').textContent = gameCode;
   showScreen('screen-join');
-} else {
-  showScreen('screen-code');
 }
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
+
+checkRejoin().then(canRejoin => {
+  if (canRejoin) {
+    document.getElementById('rejoin-name').textContent = savedSession.myName;
+    document.getElementById('join-code-display').textContent = gameCode;
+    showScreen('screen-rejoin');
+  } else if (gameCode) {
+    document.getElementById('join-code-display').textContent = gameCode;
+    showScreen('screen-join');
+  } else {
+    showScreen('screen-code');
+  }
+  // Start listening for game name once code is known
+  if (gameCode) {
+    gref('name').on('value', snap => {
+      const name = snap.val() || '';
+      const jEl = document.getElementById('join-game-name');
+      if (jEl) jEl.textContent = name;
+    });
+  }
+});
 
 // ─── Feedback Widget ──────────────────────────────────────────────────────────
 // Setup: go to formspree.io, sign up with ksweikert@gmail.com, create a form,
