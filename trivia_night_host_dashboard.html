@@ -1244,11 +1244,13 @@ async function generateQuestions() {
   } catch(_) { /* fall through to backup */ }
 
   // ── Fallback: The Trivia API ────────────────────────────────────────────────
+  const TRIVIA_API_ALL_CATS = 'music,sport_and_leisure,film_and_tv,arts_and_literature,history,society_and_culture,science,geography,food_and_drink,general_knowledge';
   if (!newQs) {
     btnText.innerHTML = '<span class="spinner"></span> Trying backup…';
     try {
       let url = `https://the-trivia-api.com/v2/questions?limit=${amount}`;
-      if (category && TRIVIA_API_CAT[category]) url += '&categories=' + TRIVIA_API_CAT[category];
+      const mappedCat = category && TRIVIA_API_CAT[category];
+      url += '&categories=' + (mappedCat || TRIVIA_API_ALL_CATS);
       if (difficulty) url += '&difficulties=' + difficulty;
       const resp = await fetchWithTimeout(url, 10000);
       const data = await resp.json();
