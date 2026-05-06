@@ -251,20 +251,20 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey:            "AIzaSyDJ28_e0fMgwZJ7NahQx7gt8_iX2VO2rns",
-  authDomain:        "trivia-127b9.firebaseapp.com",
-  databaseURL:       "https://trivia-127b9-default-rtdb.firebaseio.com",
-  projectId:         "trivia-127b9",
-  storageBucket:     "trivia-127b9.firebasestorage.app",
-  messagingSenderId: "534126219859",
-  appId:             "1:534126219859:web:adb61b3728e25c7d112ca6"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 firebase.initializeApp(firebaseConfig);
 const db   = firebase.database();
 const auth = firebase.auth();
 
 // ── Only this GitHub username can access the page ──
-const ALLOWED_GITHUB_LOGIN = 'Dehlia24';
+const ALLOWED_GITHUB_LOGIN = 'YOUR_GITHUB_USERNAME';
 
 const FOUR_HOURS = 4 * 60 * 60 * 1000;
 

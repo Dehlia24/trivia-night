@@ -584,7 +584,7 @@
   <div id="fb-thanks" style="display:none;">
     <div class="fb-thanks">
       <strong>Thank you for your feedback!</strong>
-      If you want to connect with me directly on this project, feel free to reach out to me on Slack <strong>@kswike</strong> or via email <a href="mailto:ksweikert@gmail.com">ksweikert@gmail.com</a>.
+      Thanks for playing!
     </div>
     <div style="margin-top:16px;">
       <button class="fb-cancel-btn" style="width:100%;text-align:center;" onclick="fbClose()">Close</button>
@@ -597,13 +597,13 @@
 <script>
 // ─── Firebase config — must match the host file exactly ──────────────────────
 const firebaseConfig = {
-  apiKey:            "AIzaSyDJ28_e0fMgwZJ7NahQx7gt8_iX2VO2rns",
-  authDomain:        "trivia-127b9.firebaseapp.com",
-  databaseURL:       "https://trivia-127b9-default-rtdb.firebaseio.com",
-  projectId:         "trivia-127b9",
-  storageBucket:     "trivia-127b9.firebasestorage.app",
-  messagingSenderId: "534126219859",
-  appId:             "1:534126219859:web:adb61b3728e25c7d112ca6"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -655,7 +655,7 @@ async function joinGame() {
   const existing = snap.val() || {};
   if (Object.keys(existing).length >= 100) {
     document.getElementById('join-btn').disabled = false;
-    document.getElementById('name-error').textContent = 'This game is full (100 player limit). Contact ksweikert@gmail.com for larger events.';
+    document.getElementById('name-error').textContent = 'This game is full (100 player limit).';
     return;
   }
   const taken = Object.values(existing).some(p => p.name?.toLowerCase() === name.toLowerCase());
@@ -1057,9 +1057,9 @@ checkRejoin().then(canRejoin => {
 });
 
 // ─── Feedback Widget ──────────────────────────────────────────────────────────
-// Setup: go to formspree.io, sign up with ksweikert@gmail.com, create a form,
-// then replace YOUR_FORM_ID below with the ID from your form's endpoint URL.
-const FB_URL     = 'https://formspree.io/f/mzdyznqg';
+// Setup: go to formspree.io, create a form, then replace YOUR_FORM_ID below
+// with the ID from your form's endpoint URL (e.g. https://formspree.io/f/YOUR_FORM_ID).
+const FB_URL     = 'https://formspree.io/f/YOUR_FORM_ID';
 const FB_SUBJECT = 'TRIVIA-PLAYER-FEEDBACK';
 
 function fbOpen() {

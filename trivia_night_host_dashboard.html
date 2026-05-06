@@ -515,7 +515,7 @@
               <!-- Limit notice -->
               <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(247,194,106,0.12);border:1px solid rgba(247,194,106,0.35);font-size:12px;color:var(--text);">
                 <span style="font-weight:700;color:#f7c26a;">&#9432; 100 player limit.</span>
-                For larger events contact <a href="mailto:ksweikert@gmail.com" style="color:#f7c26a;">ksweikert@gmail.com</a> or <strong>@kswike</strong> on Slack.
+                For larger events you may need to adjust the player limit in the source code.
               </div>
               <!-- Start -->
               <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
@@ -675,7 +675,7 @@
   <div id="fb-thanks" style="display:none;">
     <div class="fb-thanks">
       <strong>Thank you for your feedback!</strong>
-      If you want to connect with me directly on this project, feel free to reach out to me on Slack <strong>@kswike</strong> or via email <a href="mailto:ksweikert@gmail.com">ksweikert@gmail.com</a>.
+      Thanks for the feedback!
     </div>
     <div style="margin-top:16px;">
       <button class="fb-cancel-btn" style="width:100%;text-align:center;" onclick="fbClose()">Close</button>
@@ -691,13 +691,13 @@
 <script>
 // ─── Firebase config — paste your project's values here ──────────────────────
 const firebaseConfig = {
-  apiKey:            "AIzaSyDJ28_e0fMgwZJ7NahQx7gt8_iX2VO2rns",
-  authDomain:        "trivia-127b9.firebaseapp.com",
-  databaseURL:       "https://trivia-127b9-default-rtdb.firebaseio.com",
-  projectId:         "trivia-127b9",
-  storageBucket:     "trivia-127b9.firebasestorage.app",
-  messagingSenderId: "534126219859",
-  appId:             "1:534126219859:web:adb61b3728e25c7d112ca6"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -768,7 +768,7 @@ function switchTab(tab) {
 }
 
 async function init() {
-  if (firebaseConfig.apiKey === 'PASTE_YOUR_API_KEY_HERE') {
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
     showNotif('Firebase not configured — paste your firebaseConfig at the top of this file', 'error');
     return;
   }
@@ -1549,9 +1549,9 @@ applyTheme();
 document.addEventListener('DOMContentLoaded', init);
 
 // ─── Feedback Widget ──────────────────────────────────────────────────────────
-// Setup: go to formspree.io, sign up with ksweikert@gmail.com, create a form,
-// then replace YOUR_FORM_ID below with the ID from your form's endpoint URL.
-const FB_URL     = 'https://formspree.io/f/mzdyznqg';
+// Setup: go to formspree.io, create a form, then replace YOUR_FORM_ID below
+// with the ID from your form's endpoint URL (e.g. https://formspree.io/f/YOUR_FORM_ID).
+const FB_URL     = 'https://formspree.io/f/YOUR_FORM_ID';
 const FB_SUBJECT = 'TRIVIA-HOST-FEEDBACK';
 
 function fbOpen() {
